@@ -1,0 +1,17 @@
+# Security headers, served by Netlify for every page and file.
+# The local preview server (vite.config.ts) reads this same file, so the browser tests run under
+# exactly these rules.
+#
+# Content-Security-Policy: only this site's own files may load or run (HTTPS itself is enforced by
+# Strict-Transport-Security; upgrade-insecure-requests is left out because Safari applies it to the
+# local http preview too). 'wasm-unsafe-eval' lets the WebP encoder (WebAssembly) start; blob: is
+# for the thumbnails of images you pick.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000

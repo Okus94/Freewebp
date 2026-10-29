@@ -30,3 +30,10 @@ npm run test:e2e   # real-browser tests (Chromium and WebKit/Safari) against the
 `npm run qa` downloads the 24 Kodak test photos once, encodes each with the site's encoder and with libwebp (through sharp, the same library as `cwebp`), and compares size, SSIM, PSNR and speed. It fails if the site's output is invalid or noticeably worse than the reference, and writes a side-by-side report to `.qa/report/index.html`.
 
 `npm run test:e2e` needs Playwright's browsers once: `npx playwright install chromium webkit`. It converts every supported format, checks each download is a valid WebP of the right size with transparency kept, checks the ZIP, drag and drop, file limits, and that a 12-megapixel photo converts without freezing the page. Screenshots land in `.qa/screenshots/`.
+
+## Security
+
+- Everything runs in the browser: no server, no uploads, no analytics or cookies. A browser test (`nothing leaves the browser`) fails if the page ever sends data or contacts another site.
+- `public/_headers` sets the security headers Netlify serves (a strict Content-Security-Policy, frame blocking, nosniff, no referrer). The local preview reads the same file, so the browser tests run under them.
+- Image sizes are read from the file header before decoding (`src/lib/imageSize.ts`), so a tiny file claiming huge dimensions is refused without allocating memory for it.
+- `netlify.toml` pins the build command, output folder and Node version.
