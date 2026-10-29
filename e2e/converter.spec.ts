@@ -126,6 +126,62 @@ test('explains when an image is too large to convert', async ({ page }) => {
   await expect(page.getByText('1 of 3 converted')).toBeVisible({ timeout: 15_000 })
 })
 
+test('refuses oversized images from their header, before decoding anything', async ({ page }) => {
+  // Count decode calls: an oversized image must be rejected without one.
+  await page.addInitScript(() => {
+    const w = window as unknown as { decodes: number }
+    w.decodes = 0
+    const original = window.createImageBitmap.bind(window)
+    window.createImageBitmap = ((...args: Parameters<typeof createImageBitmap>) => {
+      w.decodes++
+      return original(...args)
+    }) as typeof createImageBitmap
+  })
+  await page.reload()
+  await fileInput(page).setInputFiles([fixturePath('bomb.png'), fixturePath('too-wide.png')])
+  await expect(rows(page).nth(0)).toContainText('Too large: 60,000 × 60,000 px (max 16,383 px per side)', { timeout: 15_000 })
+  await expect(rows(page).nth(1)).toContainText('Too large: 17,000 × 200 px', { timeout: 15_000 })
+  expect(await page.evaluate(() => (window as unknown as { decodes: number }).decodes)).toBe(0)
+})
+
+test('sends security headers', async ({ page }) => {
+  const response = await page.request.get('/')
+  const headers = response.headers()
+  expect(headers['content-security-policy']).toContain("default-src 'self'")
+  expect(headers['content-security-policy']).toContain("frame-ancestors 'none'")
+  expect(headers['x-content-type-options']).toBe('nosniff')
+  expect(headers['x-frame-options']).toBe('DENY')
+  expect(headers['referrer-policy']).toBe('no-referrer')
+})
+
+test('nothing leaves the browser: no uploads, no outside requests', async ({ page, baseURL }) => {
+  const requests: { url: string; method: string }[] = []
+  page.on('request', (request) => requests.push({ url: request.url(), method: request.method() }))
+  await page.evaluate(() => {
+    const w = window as unknown as { violations: string[] }
+    w.violations = []
+    document.addEventListener('securitypolicyviolation', (e) => w.violations.push(`${e.violatedDirective} ${e.blockedURI}`))
+  })
+  await page.reload()
+  await page.evaluate(() => {
+    const w = window as unknown as { violations: string[] }
+    w.violations = []
+    document.addEventListener('securitypolicyviolation', (e) => w.violations.push(`${e.violatedDirective} ${e.blockedURI}`))
+  })
+
+  await fileInput(page).setInputFiles(FIXTURES.map((f) => fixturePath(f.file)))
+  await expect(page.getByText(`${FIXTURES.length} of ${FIXTURES.length} converted`)).toBeVisible({ timeout: 30_000 })
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download all (.zip)' }).click()
+  await download
+
+  const origin = new URL(baseURL!).origin
+  const outside = requests.filter(({ url }) => !url.startsWith(origin) && !url.startsWith('blob:') && !url.startsWith('data:'))
+  expect(outside, 'requests to other sites').toEqual([])
+  expect(requests.filter(({ method }) => method !== 'GET'), 'anything sent (uploads)').toEqual([])
+  expect(await page.evaluate(() => (window as unknown as { violations: string[] }).violations), 'security policy violations').toEqual([])
+})
+
 test('limits a batch to 20 images', async ({ page }) => {
   await fileInput(page).setInputFiles(Array.from({ length: 21 }, () => fixturePath('photo.jpg')))
   await expect(rows(page)).toHaveCount(20)
@@ -311,28 +367,34 @@ test('reduced motion parks the light instead of moving it', async ({ page }) => 
   expect(parked.fromTop, 'parked on the top edge').toBeLessThan(3)
 })
 
-test('looks right on desktop and mobile', async ({ page }, testInfo) => {
-  // Skip to the end of the entrance animation so screenshots show the settled page.
-  await page.evaluate(() => document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).forEach((a) => a.finish()))
-  await page.screenshot({ path: `.qa/screenshots/${testInfo.project.name}-desktop.png`, fullPage: true })
-  // Close-up of the drop field, padded so the light on its border is easy to inspect.
-  const field = await page.getByRole('button', { name: /Drop images here/ }).boundingBox()
-  if (field) {
-    await page.screenshot({
-      path: `.qa/screenshots/${testInfo.project.name}-drop-field.png`,
-      clip: { x: field.x - 24, y: field.y - 24, width: field.width + 48, height: field.height + 48 },
-    })
-  }
-  await page.setViewportSize({ width: 390, height: 844 })
-  await expect(page.getByRole('heading', { name: 'Convert images to WebP' })).toBeVisible()
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
-  expect(overflow, 'no sideways scrolling on a phone').toBeLessThanOrEqual(0)
-  await page.screenshot({ path: `.qa/screenshots/${testInfo.project.name}-mobile.png`, fullPage: true })
+// Playwright's WebKit screenshots inject their own stylesheet, which the site's security policy
+// (rightly) blocks. Only this visual test lifts the policy; every other test runs under it.
+test.describe('screenshots', () => {
+  test.use({ bypassCSP: true })
 
-  await page.setViewportSize({ width: 1280, height: 900 })
-  await fileInput(page).setInputFiles([fixturePath('photo.jpg'), fixturePath('transparent.png'), fixturePath('too-big.jpg')])
-  await expect(page.getByText('2 of 3 converted')).toBeVisible({ timeout: 15_000 })
-  await page.evaluate(() => document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).forEach((a) => a.finish()))
-  await page.waitForTimeout(400) // let the row transitions settle
-  await page.screenshot({ path: `.qa/screenshots/${testInfo.project.name}-results.png` })
+  test('looks right on desktop and mobile', async ({ page }, testInfo) => {
+    // Skip to the end of the entrance animation so screenshots show the settled page.
+    await page.evaluate(() => document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).forEach((a) => a.finish()))
+    await page.screenshot({ path: `.qa/screenshots/${testInfo.project.name}-desktop.png`, fullPage: true })
+    // Close-up of the drop field, padded so the light on its border is easy to inspect.
+    const field = await page.getByRole('button', { name: /Drop images here/ }).boundingBox()
+    if (field) {
+      await page.screenshot({
+        path: `.qa/screenshots/${testInfo.project.name}-drop-field.png`,
+        clip: { x: field.x - 24, y: field.y - 24, width: field.width + 48, height: field.height + 48 },
+      })
+    }
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect(page.getByRole('heading', { name: 'Convert images to WebP' })).toBeVisible()
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+    expect(overflow, 'no sideways scrolling on a phone').toBeLessThanOrEqual(0)
+    await page.screenshot({ path: `.qa/screenshots/${testInfo.project.name}-mobile.png`, fullPage: true })
+
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await fileInput(page).setInputFiles([fixturePath('photo.jpg'), fixturePath('transparent.png'), fixturePath('too-big.jpg')])
+    await expect(page.getByText('2 of 3 converted')).toBeVisible({ timeout: 15_000 })
+    await page.evaluate(() => document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).forEach((a) => a.finish()))
+    await page.waitForTimeout(400) // let the row transitions settle
+    await page.screenshot({ path: `.qa/screenshots/${testInfo.project.name}-results.png` })
+  })
 })

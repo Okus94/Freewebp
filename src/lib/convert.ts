@@ -1,4 +1,5 @@
 import { dimensionError, isSvg } from './files'
+import { readImageSize } from './imageSize'
 import { WEBP_QUALITY } from './settings'
 import type { EncodeRequest, EncodeResponse } from '../workers/encode.worker'
 
@@ -52,7 +53,8 @@ async function decodeToImageData(file: File): Promise<ImageData> {
 
   try {
     if (!width || !height) throw new ImageProblem('This image has no size')
-    // Check before allocating the canvas, which is where an oversized image would exhaust memory.
+    // Second check, for formats whose size can't be read from the header (SVG, ICO), before the canvas
+    // allocates memory for every pixel.
     const tooLarge = dimensionError(width, height)
     if (tooLarge) throw new ImageProblem(tooLarge)
     const canvas = document.createElement('canvas')
@@ -72,6 +74,11 @@ let nextId = 0
 
 /** Converts one image file to a WebP blob. Encoding runs in a worker so the page stays responsive. */
 export async function convertToWebp(file: File, quality = WEBP_QUALITY): Promise<Blob> {
+  // Reject oversized images from their header, before decoding allocates memory for every pixel.
+  const declared = await readImageSize(file)
+  const tooLarge = declared && dimensionError(declared.width, declared.height)
+  if (tooLarge) throw new ImageProblem(tooLarge)
+
   const image = await decodeToImageData(file)
   const id = String(nextId++)
   return new Promise<Blob>((resolve, reject) => {
