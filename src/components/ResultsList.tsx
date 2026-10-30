@@ -9,7 +9,15 @@ const PRESS = 'transition-[transform,background-color,color,opacity] duration-15
 // Things that appear on their own (like the download button) grow in from just below full size, never from nothing.
 const POP_IN = 'transition-[opacity,scale] duration-200 ease-fluid starting:opacity-0 motion-safe:starting:scale-90'
 
-function ResultRow({ item, onRemove }: { item: ConvertItem; onRemove: (id: string) => void }) {
+function ResultRow({
+  item,
+  onRemove,
+  onDownloaded,
+}: {
+  item: ConvertItem
+  onRemove: (id: string) => void
+  onDownloaded: () => void
+}) {
   return (
     // The row opens its own height as it fades in (and closes it on the way out), so the list never jumps.
     <li
@@ -56,7 +64,10 @@ function ResultRow({ item, onRemove }: { item: ConvertItem; onRemove: (id: strin
         {item.status === 'done' && item.output && (
           <button
             type="button"
-            onClick={() => downloadBlob(item.output!, item.outputName)}
+            onClick={() => {
+              downloadBlob(item.output!, item.outputName)
+              onDownloaded()
+            }}
             className={`flex size-8 shrink-0 items-center justify-center rounded-full text-ink hover:bg-field ${POP_IN} ${PRESS}`}
             aria-label={`Download ${item.outputName}`}
           >
@@ -82,11 +93,14 @@ export function ResultsList({
   clearing,
   onRemove,
   onClear,
+  onDownloaded,
 }: {
   items: ConvertItem[]
   clearing: boolean
   onRemove: (id: string) => void
   onClear: () => void
+  /** Called after every download (single file or ZIP). */
+  onDownloaded: () => void
 }) {
   const [zipping, setZipping] = useState(false)
   const done = items.filter((item): item is ConvertItem & { output: Blob } => item.status === 'done' && !!item.output)
@@ -97,12 +111,14 @@ export function ResultsList({
   const downloadAll = async () => {
     if (done.length === 1) {
       downloadBlob(done[0].output, done[0].outputName)
+      onDownloaded()
       return
     }
     setZipping(true)
     try {
       const zip = await zipFiles(done.map((item) => ({ name: item.outputName, blob: item.output })))
       downloadBlob(zip, 'webp-images.zip')
+      onDownloaded()
     } finally {
       setZipping(false)
     }
@@ -117,7 +133,7 @@ export function ResultsList({
     >
       <ul aria-label="Converted images" className="divide-y divide-hairline">
         {items.map((item) => (
-          <ResultRow key={item.id} item={item} onRemove={onRemove} />
+          <ResultRow key={item.id} item={item} onRemove={onRemove} onDownloaded={onDownloaded} />
         ))}
       </ul>
       <div className="glass-footer flex flex-wrap items-center justify-between gap-3 border-t border-hairline px-4 py-3">

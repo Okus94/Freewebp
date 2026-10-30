@@ -5,13 +5,16 @@ import { Faq } from './components/Faq'
 import { FormatStrip } from './components/FormatStrip'
 import { LogoHeader } from './components/LogoHeader'
 import { ResultsList } from './components/ResultsList'
+import { Toaster } from 'sonner'
 import { useConverter } from './hooks/useConverter'
+import { useShareToastAfterDownload } from './hooks/useShareToastAfterDownload'
 
 /** Staggers the first-load entrance; 80ms apart reads as one cascade, not a queue. */
 const delay = (ms: number) => ({ '--delay': `${ms}ms` }) as CSSProperties
 
 export default function App() {
   const { items, notice, clearing, addFiles, remove, clear } = useConverter()
+  const onDownloaded = useShareToastAfterDownload()
 
   return (
     // overflow-x-clip lets glows spill past the edges on small screens without making the page scroll sideways.
@@ -37,7 +40,9 @@ export default function App() {
                   {notice}
                 </p>
               )}
-              {items.length > 0 && <ResultsList items={items} clearing={clearing} onRemove={remove} onClear={clear} />}
+              {items.length > 0 && (
+                <ResultsList items={items} clearing={clearing} onRemove={remove} onClear={clear} onDownloaded={onDownloaded} />
+              )}
             </div>
           </div>
           <FormatStrip />
@@ -47,6 +52,9 @@ export default function App() {
           <Faq />
         </div>
       </main>
+
+      {/* One toaster for the whole page; toasts slide up from the bottom centre. */}
+      <Toaster position="bottom-center" offset={24} mobileOffset={16} />
     </div>
   )
 }

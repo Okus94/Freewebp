@@ -252,6 +252,39 @@ test('results list matches the design: balanced first row, glass footer, no badg
   expect(after[0] - after[1]).toBeCloseTo(4, 0)
 })
 
+test('share toast appears 5 seconds after a download, once per visit', async ({ page, browserName, context }) => {
+  if (browserName === 'chromium') await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await fileInput(page).setInputFiles(fixturePath('photo.jpg'))
+  await expect(page.getByText('1 of 1 converted')).toBeVisible({ timeout: 15_000 })
+  const toast = page.getByText('All done — your images are saved')
+
+  const download = page.waitForEvent('download')
+  await rows(page).nth(0).getByRole('button', { name: /^Download/ }).click()
+  await download
+  const clickedAt = Date.now()
+
+  await page.waitForTimeout(3500)
+  await expect(toast, 'not before 5 seconds').toHaveCount(0)
+  await expect(toast).toBeVisible({ timeout: 4000 })
+  expect(Date.now() - clickedAt).toBeGreaterThanOrEqual(4900)
+
+  // Copying shows confirmation (or, where the clipboard is blocked, the link itself).
+  await page.getByRole('button', { name: 'Copy link' }).click()
+  await expect(page.getByText(/Link copied|Couldn’t copy automatically/)).toBeVisible()
+  if (browserName === 'chromium') {
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(new URL(page.url()).origin)
+  }
+  await page.getByRole('button', { name: 'Dismiss' }).click()
+  await expect(toast).toHaveCount(0)
+
+  // A second download in the same visit doesn't bring it back.
+  const again = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download', exact: true }).click()
+  await again
+  await page.waitForTimeout(6000)
+  await expect(toast).toHaveCount(0)
+})
+
 test('FAQ answers open and close', async ({ page }) => {
   const question = page.getByRole('button', { name: 'Does WebP keep transparency?' })
   const answer = page.getByText(/Transparent areas in PNG/)
@@ -371,6 +404,17 @@ test('reduced motion parks the light instead of moving it', async ({ page }) => 
 // (rightly) blocks. Only this visual test lifts the policy; every other test runs under it.
 test.describe('screenshots', () => {
   test.use({ bypassCSP: true })
+
+  test('share toast', async ({ page }, testInfo) => {
+    await fileInput(page).setInputFiles(fixturePath('photo.jpg'))
+    await expect(page.getByText('1 of 1 converted')).toBeVisible({ timeout: 15_000 })
+    const download = page.waitForEvent('download')
+    await rows(page).nth(0).getByRole('button', { name: /^Download/ }).click()
+    await download
+    await expect(page.getByText('All done — your images are saved')).toBeVisible({ timeout: 8000 })
+    await page.waitForTimeout(600) // let it finish sliding in
+    await page.screenshot({ path: `.qa/screenshots/${testInfo.project.name}-toast.png` })
+  })
 
   test('looks right on desktop and mobile', async ({ page }, testInfo) => {
     // Skip to the end of the entrance animation so screenshots show the settled page.
