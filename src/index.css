@@ -94,15 +94,22 @@
     box-shadow: inset 0 1px 0 color-mix(in srgb, white 85%, transparent);
   }
 
-  /* The convert button in the same glass language: translucent rose, frosted, lit from the top. */
-  .glass-button {
-    background-color: color-mix(in srgb, var(--color-rose) 88%, transparent);
-    background-image: linear-gradient(to bottom, color-mix(in srgb, white 16%, transparent), transparent 50%);
-    backdrop-filter: blur(8px) saturate(1.3);
-    box-shadow:
-      inset 0 1px 0 color-mix(in srgb, white 50%, transparent),
-      inset 0 0 0 1px color-mix(in srgb, white 18%, transparent),
-      0 4px 12px -4px color-mix(in srgb, var(--color-rose) 50%, transparent);
+  /* The upload button in chrome (see ChromeOrb). This dark violet gradient, the vendor button's own
+     fallback, shows until WebGL paints, and stays if WebGL isn't available. */
+  .chrome-orb {
+    background: radial-gradient(ellipse at 35% 0%, color-mix(in srgb, #b126ff 70%, #000), color-mix(in srgb, #b126ff 6%, #000) 70%);
+  }
+
+  .chrome-orb:has([data-renderer='webgl']) {
+    background: transparent;
+  }
+
+  .chrome-orb .chromatic-surface {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
   }
 
   /* Pointing at it brightens the light (only on devices that truly hover). */
