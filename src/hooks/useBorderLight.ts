@@ -8,7 +8,8 @@ const PARKED_AT = 0.12
 const PX_PER_KEYFRAME = 4
 
 /**
- * Moves the light around the border of `ring` at an even speed, one lap every 10s.
+ * Moves the light around the border of `ring` at an even speed, one lap every 10s, turning it to face
+ * the way it's going so its tail always trails behind.
  *
  * It animates only `transform` through the Web Animations API, which the browser can run on the
  * compositor (the GPU), so the light glides at full frame rate even while the page is busy decoding
@@ -34,11 +35,13 @@ export function useBorderLight(
       const width = ringEl.offsetWidth
       const height = ringEl.offsetHeight
       const radius = parseFloat(getComputedStyle(ringEl).borderTopLeftRadius) || 0
-      const half = bulbEl.offsetWidth / 2
+      const halfWidth = bulbEl.offsetWidth / 2
+      const halfHeight = bulbEl.offsetHeight / 2
       const path = roundedRectPath(width, height, radius, 0.75) // centre of the 1.5px stroke
+      // Centre the light on the stroke, then turn it about that centre to the direction of travel.
       const at = (t: number) => {
         const p = path.pointAt(t)
-        return `translate3d(${p.x - half}px, ${p.y - half}px, 0)`
+        return `translate3d(${p.x - halfWidth}px, ${p.y - halfHeight}px, 0) rotate(${path.headingAt(t)}deg)`
       }
 
       const previous = animation.current

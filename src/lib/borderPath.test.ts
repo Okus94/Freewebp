@@ -44,6 +44,29 @@ describe('roundedRectPath', () => {
     for (const gap of gaps) expect(gap).toBeLessThanOrEqual(step + 1e-6)
   })
 
+  it('gives the direction of travel, turning a quarter at each corner', () => {
+    const at = (d: number) => path.headingAt(d / path.perimeter)
+    const straightX = W - 2 * R
+    const straightY = H - 2 * R
+    const corner = (Math.PI * R) / 2
+    expect(at(10)).toBe(0) // along the top, moving right
+    expect(at(straightX + corner / 2)).toBeCloseTo(45, 6) // halfway round the top-right corner
+    expect(at(straightX + corner + 10)).toBe(90) // down the right side
+    expect(at(straightX + straightY + 2 * corner + 10)).toBe(180) // back along the bottom
+    expect(path.headingAt(0)).toBe(0)
+    expect(path.headingAt(1)).toBe(360)
+  })
+
+  it('turns smoothly and only forwards, so the shape never spins back', () => {
+    let previous = path.headingAt(0)
+    for (let i = 1; i <= 1000; i++) {
+      const heading = path.headingAt(i / 1000)
+      expect(heading).toBeGreaterThanOrEqual(previous)
+      expect(heading - previous, `step ${i}`).toBeLessThan(5)
+      previous = heading
+    }
+  })
+
   it('insets the path, e.g. to the centre of a stroke', () => {
     const inset = roundedRectPath(W, H, R, 0.75)
     expect(inset.pointAt(0)).toEqual({ x: R, y: 0.75 })

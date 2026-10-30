@@ -64,21 +64,27 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    /* Each colour is a little fainter than the one before, so the light dims steadily toward its ends
-       instead of staying bright and stopping. The blur then dissolves whatever edge is left. */
-    background: radial-gradient(
-      closest-side,
-      var(--color-spectrum-red),
-      color-mix(in srgb, var(--color-spectrum-orange) 85%, transparent) 18%,
-      color-mix(in srgb, var(--color-spectrum-yellow) 68%, transparent) 36%,
-      color-mix(in srgb, var(--color-spectrum-green) 48%, transparent) 54%,
-      color-mix(in srgb, var(--color-spectrum-blue) 28%, transparent) 72%,
-      color-mix(in srgb, var(--color-spectrum-violet) 12%, transparent) 88%,
-      transparent
+    /* A comet, facing right; useBorderLight turns it to the direction of travel. Its centre is the
+       head, on the stroke; the left half is the tail. */
+    width: 240px;
+    height: 64px;
+    /* One gradient, head to tail: a bright red head that softens quickly ahead and fades slowly back
+       through the spectrum behind. The fade is eased, faster near the head and slower toward the
+       tail's end, so the light dissolves instead of stopping. The blur rounds off the head. */
+    background: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in srgb, var(--color-spectrum-violet) 6%, transparent) 10%,
+      color-mix(in srgb, var(--color-spectrum-blue) 16%, transparent) 20%,
+      color-mix(in srgb, var(--color-spectrum-green) 32%, transparent) 30%,
+      color-mix(in srgb, var(--color-spectrum-yellow) 52%, transparent) 38%,
+      color-mix(in srgb, var(--color-spectrum-orange) 76%, transparent) 44%,
+      var(--color-spectrum-red) 50%,
+      color-mix(in srgb, var(--color-spectrum-red) 45%, transparent) 54%,
+      transparent 58%
     );
+    /* Fades out to the sides too, so round a corner the tail melts away instead of being cut off. */
+    mask-image: linear-gradient(to bottom, transparent, #000 35%, #000 65%, transparent);
     filter: blur(6px);
     opacity: 0.9;
     /* Its own GPU layer: the blur is drawn once, then only moved. */
