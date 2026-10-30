@@ -252,6 +252,65 @@ test('results list matches the design: balanced first row, glass footer, no badg
   expect(after[0] - after[1]).toBeCloseTo(4, 0)
 })
 
+/** Fraction of the canvas's bottom strip that has something drawn on it. */
+const shapePixels = (page: Page) =>
+  page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="shape-rain"] canvas')
+    if (!canvas || !canvas.width || !canvas.height) return 0
+    const strip = Math.max(1, Math.floor(canvas.height * 0.25))
+    const data = canvas.getContext('2d')!.getImageData(0, canvas.height - strip, canvas.width, strip).data
+    let painted = 0
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 0) painted++
+    return painted / (data.length / 4)
+  })
+
+async function downloadOne(page: Page) {
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download', exact: true }).click()
+  await download
+}
+
+test('shapes tumble in behind the page 5 seconds after a download, once per visit', async ({ page }) => {
+  await fileInput(page).setInputFiles(fixturePath('photo.jpg'))
+  await expect(page.getByText('1 of 1 converted')).toBeVisible({ timeout: 15_000 })
+  const rain = page.getByTestId('shape-rain')
+
+  await downloadOne(page)
+  const downloadedAt = Date.now()
+  await page.waitForTimeout(3500)
+  await expect(rain, 'not before 5 seconds').toHaveCount(0)
+  await expect(rain.locator('canvas')).toBeAttached({ timeout: 4000 })
+  expect(Date.now() - downloadedAt).toBeGreaterThanOrEqual(4900)
+
+  // They fall and pile up along the bottom of the screen.
+  await expect.poll(() => shapePixels(page), { timeout: 8000 }).toBeGreaterThan(0.05)
+
+  // Behind the page and click-through: the page is still what's under the pointer, and still works.
+  await expect(rain).toHaveCSS('pointer-events', 'none')
+  await expect(rain).toHaveCSS('z-index', '-10')
+  const under = await page.evaluate(() => {
+    const el = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 10)
+    return !!el?.closest('[data-testid="shape-rain"]')
+  })
+  expect(under, 'shapes never intercept clicks').toBe(false)
+
+  // A second download in the same visit doesn't start another round.
+  await downloadOne(page)
+  await page.waitForTimeout(6000)
+  await expect(rain).toHaveCount(1)
+})
+
+test('with reduced motion the shapes appear already settled', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.reload()
+  await fileInput(page).setInputFiles(fixturePath('photo.jpg'))
+  await expect(page.getByText('1 of 1 converted')).toBeVisible({ timeout: 15_000 })
+  await downloadOne(page)
+  await expect(page.getByTestId('shape-rain').locator('canvas')).toBeAttached({ timeout: 8000 })
+  // No falling: the pile is drawn straight away.
+  await expect.poll(() => shapePixels(page), { timeout: 1500 }).toBeGreaterThan(0.05)
+})
+
 test('FAQ answers open and close', async ({ page }) => {
   const question = page.getByRole('button', { name: 'Does WebP keep transparency?' })
   const answer = page.getByText(/Transparent areas in PNG/)
@@ -371,6 +430,18 @@ test('reduced motion parks the light instead of moving it', async ({ page }) => 
 // (rightly) blocks. Only this visual test lifts the policy; every other test runs under it.
 test.describe('screenshots', () => {
   test.use({ bypassCSP: true })
+
+  test('shapes after a download', async ({ page }, testInfo) => {
+    await fileInput(page).setInputFiles(fixturePath('photo.jpg'))
+    await expect(page.getByText('1 of 1 converted')).toBeVisible({ timeout: 15_000 })
+    await downloadOne(page)
+    await expect(page.getByTestId('shape-rain').locator('canvas')).toBeAttached({ timeout: 8000 })
+    await page.waitForTimeout(4500) // let them land
+    await page.screenshot({ path: `.qa/screenshots/${testInfo.project.name}-shapes.png` })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.waitForTimeout(1500)
+    await page.screenshot({ path: `.qa/screenshots/${testInfo.project.name}-shapes-mobile.png` })
+  })
 
   test('looks right on desktop and mobile', async ({ page }, testInfo) => {
     // Skip to the end of the entrance animation so screenshots show the settled page.

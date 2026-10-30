@@ -5,18 +5,23 @@ import { Faq } from './components/Faq'
 import { FormatStrip } from './components/FormatStrip'
 import { LogoHeader } from './components/LogoHeader'
 import { ResultsList } from './components/ResultsList'
+import { ShapeRain } from './components/ShapeRain'
 import { useConverter } from './hooks/useConverter'
+import { useShapesAfterDownload } from './hooks/useShapesAfterDownload'
 
 /** Staggers the first-load entrance; 80ms apart reads as one cascade, not a queue. */
 const delay = (ms: number) => ({ '--delay': `${ms}ms` }) as CSSProperties
 
 export default function App() {
   const { items, notice, clearing, addFiles, remove, clear } = useConverter()
+  const { showShapes, onDownloaded } = useShapesAfterDownload()
 
   return (
     // overflow-x-clip lets glows spill past the edges on small screens without making the page scroll sideways.
     <div className="relative isolate flex min-h-screen flex-col items-center overflow-x-clip">
       <BackgroundGlow />
+      {/* 5 seconds after the first download, shapes tumble down behind the page. */}
+      {showShapes && <ShapeRain />}
       <LogoHeader />
 
       <main className="flex w-full flex-col items-center">
@@ -37,7 +42,9 @@ export default function App() {
                   {notice}
                 </p>
               )}
-              {items.length > 0 && <ResultsList items={items} clearing={clearing} onRemove={remove} onClear={clear} />}
+              {items.length > 0 && (
+                <ResultsList items={items} clearing={clearing} onRemove={remove} onClear={clear} onDownloaded={onDownloaded} />
+              )}
             </div>
           </div>
           <FormatStrip />
