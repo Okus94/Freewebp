@@ -227,6 +227,21 @@ test('removed and cleared images animate out, then disappear', async ({ page }) 
   await expect(page.getByRole('list', { name: 'Converted images' })).toHaveCount(0)
 })
 
+test('the formats sit right under the drop field, and step aside while there are files', async ({ page }) => {
+  const formats = page.getByRole('list', { name: 'Supported formats' })
+  const field = await page.getByRole('button', { name: /Drop images here/ }).boundingBox()
+  const strip = await formats.boundingBox()
+  expect(strip!.y - (field!.y + field!.height), 'directly below the field').toBeLessThan(28)
+  await expect(formats.getByRole('listitem').first()).toHaveCSS('font-size', '14px')
+
+  await fileInput(page).setInputFiles(fixturePath('photo.jpg'))
+  await expect(page.getByText('1 of 1 converted')).toBeVisible({ timeout: 15_000 })
+  await expect(formats).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Clear' }).click()
+  await expect(formats).toBeVisible()
+})
+
 test('results list matches the design: balanced first row, glass footer, no badges', async ({ page }) => {
   await fileInput(page).setInputFiles([fixturePath('photo.jpg'), fixturePath('transparent.png'), fixturePath('photo.avif')])
   await expect(page.getByText('3 of 3 converted')).toBeVisible({ timeout: 15_000 })
