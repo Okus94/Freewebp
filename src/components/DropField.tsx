@@ -1,6 +1,7 @@
 import { useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
-import { ArrowUp, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useBorderLight } from '../hooks/useBorderLight'
+import { ChromeOrb } from './ChromeOrb'
 import { ACCEPT_ATTRIBUTE } from '../lib/files'
 
 export function DropField({ onFiles }: { onFiles: (files: File[]) => void }) {
@@ -67,9 +68,7 @@ export function DropField({ onFiles }: { onFiles: (files: File[]) => void }) {
           <Plus className="size-[18px] shrink-0" strokeWidth={2} aria-hidden />
           <span className="text-[13px] leading-[1.3] text-ink-muted">JPG, PNG, GIF, AVIF · up to 10&nbsp;MB each</span>
         </div>
-        <span className="glass-button flex size-9 shrink-0 items-center justify-center rounded-full text-white">
-          <ArrowUp className="size-[18px]" strokeWidth={2} aria-hidden />
-        </span>
+        <ChromeOrb />
       </div>
       <input
         ref={inputRef}
