@@ -87,6 +87,12 @@ export default async function globalSetup() {
   const flat = (width: number, height: number) =>
     sharp({ create: { width, height, channels: 3, background: '#f4d9d9' } }).png({ compressionLevel: 9 }).toBuffer()
   await write('too-wide.png', await flat(17000, 200))
+  // A "decompression bomb": a 24-byte PNG header claiming 60,000 × 60,000 pixels, with no pixel data.
+  const bomb = Buffer.alloc(24)
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]).copy(bomb)
+  bomb.writeUInt32BE(60000, 16)
+  bomb.writeUInt32BE(60000, 20)
+  await write('bomb.png', bomb)
   await write('too-many-pixels.png', await flat(8000, 7000))
   // Over the size limit; contents don't matter because size is checked first.
   await write('too-big.jpg', Buffer.alloc(11 * 1024 * 1024, 1))
