@@ -426,6 +426,21 @@ test('reduced motion parks the light instead of moving it', async ({ page }) => 
   expect(parked.fromTop, 'parked on the top edge').toBeLessThan(3)
 })
 
+test('the upload button is chrome, painted with WebGL, and still opens the file picker', async ({ page }) => {
+  const orb = page.getByRole('button', { name: /Drop images here/ }).locator('.chrome-orb')
+  const surface = orb.locator('canvas')
+  await expect(surface).toHaveAttribute('data-renderer', 'webgl')
+  // The still fallback gradient steps aside once WebGL paints.
+  await expect(orb).toHaveCSS('background-image', 'none')
+  const [orbBox, surfaceBox] = await Promise.all([orb.boundingBox(), surface.boundingBox()])
+  expect(surfaceBox, 'the chrome fills the button').toEqual(orbBox)
+  await expect(surface).toHaveCSS('pointer-events', 'none')
+
+  const chooser = page.waitForEvent('filechooser')
+  await orb.click()
+  await chooser
+})
+
 // Playwright's WebKit screenshots inject their own stylesheet, which the site's security policy
 // (rightly) blocks. Only this visual test lifts the policy; every other test runs under it.
 test.describe('screenshots', () => {
