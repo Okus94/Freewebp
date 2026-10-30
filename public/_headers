@@ -6,13 +6,9 @@
 # Strict-Transport-Security; upgrade-insecure-requests is left out because Safari applies it to the
 # local http preview too). 'wasm-unsafe-eval' lets the WebP encoder (WebAssembly) start; blob: is
 # for the thumbnails of images you pick.
-#
-# style-src allows exactly two inline stylesheets by fingerprint: Sonner's (the toast library injects
-# its CSS at runtime) and the empty <style> tag it creates first. Sonner is pinned to an exact version
-# and src/lib/csp.test.ts fails if its stylesheet no longer matches the fingerprint here.
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'sha256-StEaX+se6YS7pqjzrzMIA0KaX9zF/8zAhvQXZAe5epY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='; img-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: no-referrer

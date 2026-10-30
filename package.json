@@ -17,8 +17,7 @@
     "fflate": "^0.8.3",
     "lucide-react": "^1.64.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "sonner": "2.0.8"
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

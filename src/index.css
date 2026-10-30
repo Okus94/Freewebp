@@ -94,18 +94,6 @@
     box-shadow: inset 0 1px 0 color-mix(in srgb, white 85%, transparent);
   }
 
-  /* The share toast: frosted glass over the page, lit from the top, with a soft rose shadow. Nearly
-     opaque on purpose: Sonner's animated wrapper stops the backdrop blur from reaching the page, so
-     legibility can't depend on it. */
-  .glass-toast {
-    background-color: color-mix(in srgb, white 92%, transparent);
-    backdrop-filter: blur(16px) saturate(1.2);
-    box-shadow:
-      inset 0 1px 0 color-mix(in srgb, white 90%, transparent),
-      inset 0 0 0 1px var(--color-hairline),
-      0 16px 40px -16px color-mix(in srgb, var(--color-rose) 35%, transparent);
-  }
-
   /* The convert button in the same glass language: translucent rose, frosted, lit from the top. */
   .glass-button {
     background-color: color-mix(in srgb, var(--color-rose) 88%, transparent);
