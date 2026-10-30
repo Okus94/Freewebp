@@ -37,6 +37,8 @@ export default function App() {
               <div className="motion-rise w-full" style={delay(160)}>
                 <DropField onFiles={addFiles} />
               </div>
+              {/* Only while the page is empty; it steps aside once there are files to download. */}
+              {items.length === 0 && <FormatStrip />}
               {notice && (
                 <p className="mt-3 text-[13px] leading-[1.3] text-rose transition-[opacity,translate] duration-200 ease-fluid starting:opacity-0 motion-safe:starting:-translate-y-1">
                   {notice}
@@ -47,7 +49,6 @@ export default function App() {
               )}
             </div>
           </div>
-          <FormatStrip />
         </section>
 
         <div className="w-full max-w-[672px] px-4">
