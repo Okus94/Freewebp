@@ -100,17 +100,17 @@
     box-shadow: inset 0 1px 0 color-mix(in srgb, white 85%, transparent);
   }
 
-  /* The upload button in chrome (see ChromeOrb). This dark violet gradient, the vendor button's own
-     fallback, shows until WebGL paints, and stays if WebGL isn't available. */
-  .chrome-orb {
+  /* Chrome controls (see ChromeFill): the upload button and the 404 page's button. This dark violet
+     gradient, the vendor button's own fallback, shows until WebGL paints, and stays without WebGL. */
+  .chrome {
     background: radial-gradient(ellipse at 35% 0%, color-mix(in srgb, #b126ff 70%, #000), color-mix(in srgb, #b126ff 6%, #000) 70%);
   }
 
-  .chrome-orb:has([data-renderer='webgl']) {
+  .chrome:has([data-renderer='webgl']) {
     background: transparent;
   }
 
-  .chrome-orb .chromatic-surface {
+  .chrome .chromatic-surface {
     position: absolute;
     inset: 0;
     width: 100%;

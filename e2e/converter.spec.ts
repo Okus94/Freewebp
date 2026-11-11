@@ -453,7 +453,7 @@ test('reduced motion parks the light instead of moving it', async ({ page }) => 
 })
 
 test('the upload button is chrome, painted with WebGL, and still opens the file picker', async ({ page }) => {
-  const orb = page.getByRole('button', { name: /Drop images here/ }).locator('.chrome-orb')
+  const orb = page.getByRole('button', { name: /Drop images here/ }).locator('.chrome')
   const surface = orb.locator('canvas')
   await expect(surface).toHaveAttribute('data-renderer', 'webgl')
   // The still fallback gradient steps aside once WebGL paints.
@@ -505,7 +505,9 @@ test('a wrong address is a real 404 with a way back to the converter', async ({ 
   await expect(page.getByRole('heading', { level: 1, name: "This page doesn't exist" })).toBeVisible()
   await expect(page).toHaveTitle('Page not found — WebP Converter')
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex')
-  await page.getByRole('link', { name: 'Convert images to WebP' }).click()
+  const back = page.getByRole('link', { name: 'Convert images to WebP' })
+  await expect(back.locator('canvas'), 'the button is chrome, like the upload button').toHaveAttribute('data-renderer', 'webgl')
+  await back.click()
   await expect(page.getByRole('heading', { name: 'Convert images to WebP' })).toBeVisible()
 })
 

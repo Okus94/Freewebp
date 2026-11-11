@@ -18,14 +18,22 @@ export const MATERIAL = {
 }
 
 /**
- * The drop field's round upload button, in ReactDrops' chromatic chrome: flowing spectrum gradients with
- * chrome reflections (WebGL). It's only a visual — the whole drop field is the control — so it has no
- * hover state of its own. Without WebGL it falls back to a still dark chrome gradient (.chrome-orb).
+ * ReactDrops' chromatic chrome (flowing spectrum gradients with chrome reflections, drawn with WebGL) as a
+ * fill for any fully rounded control. Put it first inside an element with the `chrome` class, which sizes
+ * it to fill and shows a still dark chrome gradient until WebGL paints, or if WebGL isn't available.
+ */
+export function ChromeFill() {
+  return <ChromaticSurface {...MATERIAL} borderRadius={RADIUS} />
+}
+
+/**
+ * The drop field's round upload button, in chrome. It's only a visual — the whole drop field is the
+ * control — so it has no hover state of its own.
  */
 export function ChromeOrb() {
   return (
-    <span className="chrome-orb relative isolate flex size-9 shrink-0 items-center justify-center rounded-full text-white">
-      <ChromaticSurface {...MATERIAL} borderRadius={RADIUS} />
+    <span className="chrome relative isolate flex size-9 shrink-0 items-center justify-center rounded-full text-white">
+      <ChromeFill />
       <ArrowUp className="relative size-[18px]" strokeWidth={2} aria-hidden />
     </span>
   )
