@@ -37,7 +37,7 @@ test('page renders the hero and FAQ', async ({ page }) => {
 
   const question = page.getByText('Is my data safe? Do you store my images?')
   await question.click()
-  await expect(page.getByText(/Your images never leave your device/)).toBeVisible()
+  await expect(page.getByText(/Your images never leave your computer or phone/)).toBeVisible()
 })
 
 test('converts every supported format to a valid WebP', async ({ page }, testInfo) => {
@@ -337,9 +337,18 @@ test('with reduced motion the shapes appear already settled', async ({ page }) =
   await expect.poll(() => shapePixels(page), { timeout: 1500 }).toBeGreaterThan(0.05)
 })
 
+test('the FAQ reads like a person wrote it: no dashes of any kind', async ({ page }) => {
+  const faq = page.getByRole('heading', { name: 'Frequently asked questions' }).locator('xpath=..')
+  // Closed answers are inert, so read the text from the DOM rather than what's on screen.
+  const text = await faq.evaluate((el) => el.textContent ?? '')
+  expect(text).toContain('Is it really free?')
+  expect(text, 'answers are checked too').toContain('no catch')
+  expect(text).not.toMatch(/[\u2010-\u2015-]/)
+})
+
 test('FAQ answers open and close', async ({ page }) => {
   const question = page.getByRole('button', { name: 'Does WebP keep transparency?' })
-  const answer = page.getByText(/Transparent areas in PNG/)
+  const answer = page.getByText(/it stays transparent in the WebP/)
   await expect(question).toHaveAttribute('aria-expanded', 'false')
   await question.click()
   await expect(question).toHaveAttribute('aria-expanded', 'true')
