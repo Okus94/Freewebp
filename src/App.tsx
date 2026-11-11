@@ -33,7 +33,7 @@ export default function App() {
                 Convert images to WebP
               </h1>
               <p className="motion-rise mt-[18px] text-base" style={delay(80)}>
-                Smaller files, same quality — no uploads, no sign-up
+                Smaller files, same quality. No uploads, no sign-up
               </p>
               <div className="motion-rise w-full" style={delay(160)}>
                 <DropField onFiles={addFiles} />
