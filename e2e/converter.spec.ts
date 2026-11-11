@@ -227,6 +227,17 @@ test('removed and cleared images animate out, then disappear', async ({ page }) 
   await expect(page.getByRole('list', { name: 'Converted images' })).toHaveCount(0)
 })
 
+test('the page is set in Geist, served from the site itself, with the sunflower logo', async ({ page }) => {
+  await expect(page.locator('body')).toHaveCSS('font-family', /^"?Geist Variable"?,/)
+  await page.evaluate(() => document.fonts.ready)
+  expect(await page.evaluate(() => document.fonts.check('500 16px "Geist Variable"')), 'Geist loaded').toBe(true)
+
+  const logo = page.getByRole('banner').locator('img')
+  await expect(logo).toHaveAttribute('src', '/favicon.svg')
+  expect(await logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0), 'logo loaded').toBe(true)
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon.svg')
+})
+
 test('the formats sit right under the drop field, and step aside while there are files', async ({ page }) => {
   const formats = page.getByRole('list', { name: 'Supported formats' })
   const field = await page.getByRole('button', { name: /Drop images here/ }).boundingBox()
