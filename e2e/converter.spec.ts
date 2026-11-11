@@ -234,6 +234,8 @@ test('the page is set in Geist, served from the site itself, with the sunflower 
 
   const logo = page.getByRole('banner').locator('img')
   await expect(logo).toHaveAttribute('src', '/logo-mark.svg')
+  // Safari draws SVG filters (blur, drop shadow) at 1x, which leaves the whole mark fuzzy on phones.
+  expect(await (await page.request.get('/logo-mark.svg')).text(), 'logo stays sharp on iPhone').not.toContain('filter=')
   await expect(page.getByRole('banner').getByText('WebP Converter')).toHaveCSS('font-weight', '500')
   expect(await logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0), 'logo loaded').toBe(true)
   await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute('href', '/favicon.svg')
