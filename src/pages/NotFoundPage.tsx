@@ -1,3 +1,4 @@
+import { ChromeFill } from '../components/ChromeOrb'
 import { SubPage } from '../components/SubPage'
 
 export function NotFoundPage() {
@@ -9,11 +10,13 @@ export function NotFoundPage() {
           This page doesn't exist
         </h1>
         <p className="motion-rise text-base text-ink-muted">The link may be old, or the address may have a typo.</p>
+        {/* The same chrome as the upload button, so the way back reads as the site's main action. */}
         <a
           href="/"
-          className="motion-rise mt-3 inline-flex h-11 items-center rounded-full bg-ink px-6 text-[15px] font-medium text-paper transition-[transform,opacity] duration-150 ease-fluid hover:opacity-90 motion-safe:active:scale-[0.97]"
+          className="chrome motion-rise relative isolate mt-3 inline-flex h-11 items-center rounded-full px-6 text-[15px] font-medium text-white transition-transform duration-150 ease-fluid motion-safe:active:scale-[0.97]"
         >
-          Convert images to WebP
+          <ChromeFill />
+          <span className="relative">Convert images to WebP</span>
         </a>
       </div>
     </SubPage>
