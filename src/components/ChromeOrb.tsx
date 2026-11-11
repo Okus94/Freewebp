@@ -1,10 +1,21 @@
 import { ArrowUp } from 'lucide-react'
-import { chromaticButtonDefaults, chromaticButtonProjectionScale } from '../vendor/chromatic-button/chromatic-button'
 import { ChromaticSurface, chromaticDefaults } from '../vendor/chromatic-button/chromatic-surface'
 
 /** Fully round, so the chrome's reflections wrap the circle the way they wrap the button's ends. */
 const RADIUS = 50
-const RIM_PROJECTION = chromaticButtonProjectionScale(chromaticButtonDefaults.projectionScale, RADIUS)
+
+/**
+ * The vendor button's material (`chromaticButtonDefaults` in chromatic-button.tsx), copied rather than
+ * imported so the unused button component and its styles stay out of the bundle. At a 50% radius the
+ * button keeps its rim projection as is, and the face uses the material's own projection.
+ */
+export const MATERIAL = {
+  feather: 100,
+  intensity: 1.4,
+  grain: 0.105,
+  projectionScale: 174.7,
+  centerProjectionScale: chromaticDefaults.projectionScale,
+}
 
 /**
  * The drop field's round upload button, in ReactDrops' chromatic chrome: flowing spectrum gradients with
@@ -14,15 +25,7 @@ const RIM_PROJECTION = chromaticButtonProjectionScale(chromaticButtonDefaults.pr
 export function ChromeOrb() {
   return (
     <span className="chrome-orb relative isolate flex size-9 shrink-0 items-center justify-center rounded-full text-white">
-      <ChromaticSurface
-        feather={chromaticButtonDefaults.feather}
-        intensity={chromaticButtonDefaults.intensity}
-        grain={chromaticButtonDefaults.grain}
-        borderRadius={RADIUS}
-        projectionScale={RIM_PROJECTION}
-        // As in the vendor button: the face keeps the material's own projection; only the rim is wider.
-        centerProjectionScale={RIM_PROJECTION - (chromaticButtonDefaults.projectionScale - chromaticDefaults.projectionScale)}
-      />
+      <ChromaticSurface {...MATERIAL} borderRadius={RADIUS} />
       <ArrowUp className="relative size-[18px]" strokeWidth={2} aria-hidden />
     </span>
   )
