@@ -7,3 +7,18 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+# The project's built-in netlify.app address always exists. Send anyone who lands on it to the real
+# domain, keeping the page they asked for, so people and search engines only ever see freewebp.org.
+# Deploy previews (deploy-preview-N--freewebp.netlify.app) are separate hosts and aren't affected.
+[[redirects]]
+  from = "https://freewebp.netlify.app/*"
+  to = "https://freewebp.org/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "http://freewebp.netlify.app/*"
+  to = "https://freewebp.org/:splat"
+  status = 301
+  force = true
