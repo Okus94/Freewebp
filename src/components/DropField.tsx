@@ -61,7 +61,15 @@ export function DropField({ onFiles }: { onFiles: (files: File[]) => void }) {
         key={dragging ? 'drop' : 'idle'}
         className="text-base leading-[1.4] text-ink-muted transition-[opacity,filter] duration-200 ease-fluid starting:opacity-0 starting:blur-[2px]"
       >
-        {dragging ? 'Drop to convert' : 'Drop images here'}
+        {dragging ? (
+          'Drop to convert'
+        ) : (
+          <>
+            {/* Phones and tablets can't drag files in, so invite a tap there instead. */}
+            <span className="pointer-coarse:hidden">Drop images here</span>
+            <span className="hidden pointer-coarse:inline">Tap to choose images</span>
+          </>
+        )}
       </span>
       <div className="flex w-full items-center justify-between">
         <div className="flex items-center gap-3">

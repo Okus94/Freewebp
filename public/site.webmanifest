@@ -1,0 +1,14 @@
+{
+  "name": "WebP Converter",
+  "short_name": "WebP",
+  "description": "Convert images to WebP in your browser. No uploads, no sign-up.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf5f1",
+  "theme_color": "#fbf5f1",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
