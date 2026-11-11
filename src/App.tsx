@@ -26,13 +26,13 @@ export default function App() {
       <LogoHeader />
 
       <main className="flex w-full flex-col items-center">
-        <section className="flex w-full flex-col items-center pb-20">
+        <section className="flex w-full flex-col items-center pb-12 sm:pb-16">
           <div className="flex w-full justify-center px-4 pt-16 sm:pt-24">
             <div className="flex w-full max-w-[640px] flex-col items-center text-center">
               <h1 className="motion-rise text-[40px] leading-[1.05] font-medium tracking-[-0.045em] sm:text-[66px] sm:whitespace-nowrap">
                 Convert images to WebP
               </h1>
-              <p className="motion-rise mt-[18px] text-base" style={delay(80)}>
+              <p className="motion-rise mt-[18px] text-base text-balance" style={delay(80)}>
                 Smaller files, same quality. No uploads, no sign-up
               </p>
               <div className="motion-rise w-full" style={delay(160)}>
