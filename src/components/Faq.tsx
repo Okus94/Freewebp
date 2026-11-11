@@ -4,35 +4,35 @@ import { ChevronDown } from 'lucide-react'
 const QUESTIONS = [
   {
     q: 'What image formats can I convert?',
-    a: 'JPG, PNG, GIF, AVIF, BMP, SVG and ICO — anything your browser can open. Animated GIFs are converted from their first frame.',
+    a: 'JPG, PNG, GIF, AVIF, BMP, SVG and ICO. Basically, if your browser can open it, you can convert it. For animated GIFs you’ll get the first frame.',
   },
   {
     q: 'Is there a file size limit?',
-    a: 'Each image can be up to 10 MB, and you can convert up to 20 images at a time.',
+    a: 'Each image can be up to 10 MB, and you can do 20 at a time. That’s plenty for most photos straight off your phone.',
   },
   {
     q: 'Is my data safe? Do you store my images?',
-    a: 'Your images never leave your device. They’re converted inside your browser, nothing is uploaded, and nothing is kept once you close the tab.',
+    a: 'Your images never leave your computer or phone. Everything happens right in your browser, so nothing gets uploaded and there’s nothing for us to keep. Close the tab and they’re gone.',
   },
   {
     q: 'How much smaller will my images get?',
-    a: 'It depends on the image. Google measures WebP at 25–34% smaller than comparable JPGs, and PNGs often shrink much more. Each file shows its exact savings after converting.',
+    a: 'It depends on the image, but usually a fair bit. Google found WebP files come out about 25 to 34% smaller than JPGs of the same quality, and PNGs often shrink even more. You’ll see the before and after size for every file.',
   },
   {
     q: 'Does WebP keep transparency?',
-    a: 'Yes. Transparent areas in PNG, GIF, SVG and ICO images stay transparent in the WebP file.',
+    a: 'Yes. If part of your PNG, GIF, SVG or ICO is transparent, it stays transparent in the WebP.',
   },
   {
     q: 'Can I convert multiple images at once?',
-    a: 'Yes. Drop up to 20 images together, then download them one by one or all at once as a ZIP.',
+    a: 'Yes. Drop in up to 20 images together, then download them one at a time or grab them all in a single ZIP.',
   },
   {
     q: 'Which browsers support WebP?',
-    a: 'All current versions of Chrome, Safari, Firefox and Edge show WebP images, on desktop and mobile.',
+    a: 'Every current version of Chrome, Safari, Firefox and Edge, on desktop and mobile. So you can use WebP on your website without worrying about who can see it.',
   },
   {
     q: 'Is it really free?',
-    a: 'Yes. No sign-up, no watermarks and no limits beyond the file size above.',
+    a: 'Yes, completely. No account, no watermarks and no catch. The only limits are the ones above.',
   },
 ]
 
