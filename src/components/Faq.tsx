@@ -79,7 +79,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 export function Faq() {
   return (
-    <section className="mt-16 flex w-full flex-col items-center gap-7 border-t border-hairline pt-16 pb-24">
+    <section className="flex w-full flex-col items-center gap-7 border-t border-hairline pt-12 pb-24 sm:pt-16">
       <h2 className="text-center text-[28px] leading-[1.15] font-semibold tracking-[-0.96px] sm:text-[32px]">
         Frequently asked questions
       </h2>
