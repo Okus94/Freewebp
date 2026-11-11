@@ -233,7 +233,8 @@ test('the page is set in Geist, served from the site itself, with the sunflower 
   expect(await page.evaluate(() => document.fonts.check('500 16px "Geist Variable"')), 'Geist loaded').toBe(true)
 
   const logo = page.getByRole('banner').locator('img')
-  await expect(logo).toHaveAttribute('src', '/favicon.svg')
+  await expect(logo).toHaveAttribute('src', '/logo-mark.svg')
+  await expect(page.getByRole('banner').getByText('WebP Converter')).toHaveCSS('font-weight', '500')
   expect(await logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0), 'logo loaded').toBe(true)
   await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute('href', '/favicon.svg')
 })
