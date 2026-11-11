@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/inter';
+@import '@fontsource-variable/geist';
 
 @theme {
   --color-paper: #fbf5f1;
@@ -12,8 +12,8 @@
   --color-ink: #1e1a1b;
   --color-ink-muted: #685c5e;
 
-  /* Apple devices get SF Pro; everyone else gets Inter. */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', Inter, system-ui, sans-serif;
+  /* Geist, Vercel's typeface (SIL Open Font License), self-hosted so it works under the strict CSP. */
+  --font-sans: 'Geist Variable', Geist, system-ui, sans-serif;
 
   /* Softened spectrum for the drop field's travelling stroke. */
   --color-spectrum-red: #ff8a8a;

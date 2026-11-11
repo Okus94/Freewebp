@@ -227,6 +227,17 @@ test('removed and cleared images animate out, then disappear', async ({ page }) 
   await expect(page.getByRole('list', { name: 'Converted images' })).toHaveCount(0)
 })
 
+test('the page is set in Geist, served from the site itself, with the sunflower logo', async ({ page }) => {
+  await expect(page.locator('body')).toHaveCSS('font-family', /^"?Geist Variable"?,/)
+  await page.evaluate(() => document.fonts.ready)
+  expect(await page.evaluate(() => document.fonts.check('500 16px "Geist Variable"')), 'Geist loaded').toBe(true)
+
+  const logo = page.getByRole('banner').locator('img')
+  await expect(logo).toHaveAttribute('src', '/favicon.svg')
+  expect(await logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0), 'logo loaded').toBe(true)
+  await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute('href', '/favicon.svg')
+})
+
 test('the formats sit right under the drop field, and step aside while there are files', async ({ page }) => {
   const formats = page.getByRole('list', { name: 'Supported formats' })
   const field = await page.getByRole('button', { name: /Drop images here/ }).boundingBox()
@@ -458,6 +469,80 @@ test('the upload button is chrome, painted with WebGL, and still opens the file 
 
 // Playwright's WebKit screenshots inject their own stylesheet, which the site's security policy
 // (rightly) blocks. Only this visual test lifts the policy; every other test runs under it.
+test('every page has its own title, description and link preview', async ({ page }) => {
+  const head = async () =>
+    page.evaluate(() => ({
+      title: document.title,
+      description: document.querySelector('meta[name="description"]')?.getAttribute('content'),
+      ogTitle: document.querySelector('meta[property="og:title"]')?.getAttribute('content'),
+      ogImage: document.querySelector('meta[property="og:image"]')?.getAttribute('content'),
+      canonical: document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+    }))
+
+  const home = await head()
+  expect(home.title).toBe('WebP Converter — Convert images to WebP in your browser')
+  expect(home.description).toContain('no uploads')
+  expect(home.ogImage).toBe('https://freewebp.netlify.app/og.png')
+  expect(home.canonical).toBe('https://freewebp.netlify.app/')
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image')
+
+  await page.getByRole('navigation', { name: 'Site' }).getByRole('link', { name: 'Privacy' }).click()
+  await expect(page).toHaveURL(/\/privacy\/$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeVisible()
+  const privacy = await head()
+  expect(privacy.title).toBe('Privacy policy — WebP Converter')
+  expect(privacy.description).not.toBe(home.description)
+  expect(privacy.ogTitle).toBe(privacy.title)
+  expect(privacy.canonical).toBe('https://freewebp.netlify.app/privacy/')
+})
+
+test('a wrong address is a real 404 with a way back to the converter', async ({ page }) => {
+  const response = await page.request.get('/no-such-page')
+  expect(response.status()).toBe(404)
+
+  // Netlify answers any unknown address with this page.
+  await page.goto('/404.html')
+  await expect(page.getByRole('heading', { level: 1, name: "This page doesn't exist" })).toBeVisible()
+  await expect(page).toHaveTitle('Page not found — WebP Converter')
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex')
+  await page.getByRole('link', { name: 'Convert images to WebP' }).click()
+  await expect(page.getByRole('heading', { name: 'Convert images to WebP' })).toBeVisible()
+})
+
+test('icons, link-preview image, robots.txt and sitemap are all served', async ({ page }) => {
+  const files: [string, RegExp][] = [
+    ['/favicon.svg', /svg/],
+    ['/favicon.ico', /icon/],
+    ['/apple-touch-icon.png', /png/],
+    ['/icon-192.png', /png/],
+    ['/icon-512.png', /png/],
+    ['/og.png', /png/],
+    ['/site.webmanifest', /manifest|json/],
+    ['/robots.txt', /text\/plain/],
+    ['/sitemap.xml', /xml/],
+  ]
+  for (const [path, type] of files) {
+    const response = await page.request.get(path)
+    expect(response.status(), path).toBe(200)
+    expect(response.headers()['content-type'], path).toMatch(type)
+  }
+  expect(await (await page.request.get('/robots.txt')).text()).toContain('Sitemap: https://freewebp.netlify.app/sitemap.xml')
+  const sitemap = await (await page.request.get('/sitemap.xml')).text()
+  expect(sitemap).toContain('<loc>https://freewebp.netlify.app/</loc>')
+  expect(sitemap).toContain('<loc>https://freewebp.netlify.app/privacy/</loc>')
+  await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/apple-touch-icon.png')
+})
+
+test.describe('on a touch screen', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
+
+  test('the drop field invites a tap instead of a drop', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByText('Tap to choose images')).toBeVisible()
+    await expect(page.getByText('Drop images here')).toBeHidden()
+  })
+})
+
 test.describe('screenshots', () => {
   test.use({ bypassCSP: true })
 

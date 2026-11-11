@@ -21,6 +21,18 @@ function netlifyHeaders(): Record<string, string> {
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Several real pages rather than a single-page app, so an unknown address is a true 404
+  // (Netlify then serves 404.html) instead of quietly showing the converter.
+  appType: 'mpa',
+  build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        privacy: 'privacy/index.html',
+        notFound: '404.html',
+      },
+    },
+  },
   // The WebP encoder loads its .wasm file relative to its own module, so Vite
   // must serve it as-is instead of pre-bundling it.
   optimizeDeps: {

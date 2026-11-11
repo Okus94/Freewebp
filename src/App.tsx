@@ -6,6 +6,7 @@ import { FormatStrip } from './components/FormatStrip'
 import { LogoHeader } from './components/LogoHeader'
 import { ResultsList } from './components/ResultsList'
 import { ShapeRain } from './components/ShapeRain'
+import { SiteFooter } from './components/SiteFooter'
 import { useConverter } from './hooks/useConverter'
 import { useShapesAfterDownload } from './hooks/useShapesAfterDownload'
 
@@ -55,6 +56,7 @@ export default function App() {
           <Faq />
         </div>
       </main>
+      <SiteFooter />
     </div>
   )
 }
