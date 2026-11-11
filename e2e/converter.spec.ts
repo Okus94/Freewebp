@@ -491,7 +491,7 @@ test('every page has its own title, description and link preview', async ({ page
 
   const home = await head()
   expect(home.title).toBe('WebP Converter — Convert images to WebP in your browser')
-  expect(home.description).toContain('no uploads')
+  expect(home.description).toContain('No uploads, no sign-up')
   expect(home.ogImage).toBe('https://freewebp.org/og.png')
   expect(home.canonical).toBe('https://freewebp.org/')
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image')
