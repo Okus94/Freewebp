@@ -492,8 +492,8 @@ test('every page has its own title, description and link preview', async ({ page
   const home = await head()
   expect(home.title).toBe('WebP Converter — Convert images to WebP in your browser')
   expect(home.description).toContain('no uploads')
-  expect(home.ogImage).toBe('https://freewebp.netlify.app/og.png')
-  expect(home.canonical).toBe('https://freewebp.netlify.app/')
+  expect(home.ogImage).toBe('https://freewebp.org/og.png')
+  expect(home.canonical).toBe('https://freewebp.org/')
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image')
 
   await page.getByRole('navigation', { name: 'Site' }).getByRole('link', { name: 'Privacy' }).click()
@@ -503,7 +503,7 @@ test('every page has its own title, description and link preview', async ({ page
   expect(privacy.title).toBe('Privacy policy — WebP Converter')
   expect(privacy.description).not.toBe(home.description)
   expect(privacy.ogTitle).toBe(privacy.title)
-  expect(privacy.canonical).toBe('https://freewebp.netlify.app/privacy/')
+  expect(privacy.canonical).toBe('https://freewebp.org/privacy/')
 })
 
 test('a wrong address is a real 404 with a way back to the converter', async ({ page }) => {
@@ -538,10 +538,10 @@ test('icons, link-preview image, robots.txt and sitemap are all served', async (
     expect(response.status(), path).toBe(200)
     expect(response.headers()['content-type'], path).toMatch(type)
   }
-  expect(await (await page.request.get('/robots.txt')).text()).toContain('Sitemap: https://freewebp.netlify.app/sitemap.xml')
+  expect(await (await page.request.get('/robots.txt')).text()).toContain('Sitemap: https://freewebp.org/sitemap.xml')
   const sitemap = await (await page.request.get('/sitemap.xml')).text()
-  expect(sitemap).toContain('<loc>https://freewebp.netlify.app/</loc>')
-  expect(sitemap).toContain('<loc>https://freewebp.netlify.app/privacy/</loc>')
+  expect(sitemap).toContain('<loc>https://freewebp.org/</loc>')
+  expect(sitemap).toContain('<loc>https://freewebp.org/privacy/</loc>')
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/apple-touch-icon.png')
 })
 

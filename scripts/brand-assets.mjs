@@ -33,7 +33,7 @@ const shoot = async (html, width, height, path, transparent = false) => {
 await shoot(
   page(
     `<div class="card"><div class="logo">${logo}</div><h1>Convert images to WebP</h1>
-     <p>Smaller files, same quality — no uploads, no sign-up</p><span>freewebp.netlify.app</span></div>`,
+     <p>Smaller files, same quality — no uploads, no sign-up</p><span>freewebp.org</span></div>`,
     `.card { width: 1200px; height: 630px; box-sizing: border-box; display: flex; flex-direction: column;
         align-items: center; justify-content: center; font-family: Geist; color: #1e1a1b;
         background: radial-gradient(circle at 50% 45%, #f4d9d9 0%, #fbf5f1 62%); }
