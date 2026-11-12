@@ -29,7 +29,9 @@ export default function App() {
         <section className="flex w-full flex-col items-center pb-12 sm:pb-16">
           <div className="flex w-full justify-center px-4 pt-16 sm:pt-24">
             <div className="flex w-full max-w-[640px] flex-col items-center text-center">
-              <h1 className="motion-rise text-[40px] leading-[1.05] font-medium tracking-[-0.045em] sm:text-[66px] sm:whitespace-nowrap">
+              {/* One line at every width: the size tracks the viewport between 640px and ~768px,
+                  where a fixed 66px would be wider than the screen and get clipped. */}
+              <h1 className="motion-rise text-[40px] leading-[1.05] font-medium tracking-[-0.045em] sm:text-[clamp(44px,8.6vw,66px)] sm:whitespace-nowrap">
                 Convert images to WebP
               </h1>
               <p className="motion-rise mt-[18px] text-base text-balance" style={delay(80)}>
