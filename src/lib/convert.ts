@@ -62,6 +62,7 @@ async function decodeToImageData(file: File): Promise<ImageData> {
   let width: number
   let height: number
   let url: string | null = null
+  let canvas: HTMLCanvasElement | null = null
 
   try {
     // createImageBitmap is fastest but can't read SVGs and, in some browsers, ICOs.
@@ -82,7 +83,7 @@ async function decodeToImageData(file: File): Promise<ImageData> {
     // allocates memory for every pixel.
     const tooLarge = dimensionError(width, height)
     if (tooLarge) throw new ImageProblem(tooLarge)
-    const canvas = document.createElement('canvas')
+    canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
     const ctx = canvas.getContext('2d', { willReadFrequently: true })
@@ -92,6 +93,10 @@ async function decodeToImageData(file: File): Promise<ImageData> {
   } finally {
     if (source instanceof ImageBitmap) source.close()
     if (url) URL.revokeObjectURL(url)
+    // Free the canvas's pixel memory now rather than whenever garbage collection gets to it: Safari
+    // is slow to reclaim canvases, and iOS caps their total memory, so a batch of big photos could
+    // otherwise reach a point where drawImage silently paints nothing.
+    if (canvas) canvas.width = canvas.height = 0
   }
 }
 
