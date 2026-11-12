@@ -57,9 +57,9 @@ function ResultRow({
             )}
           </div>
         </div>
-        {/* A quicker spin reads as quicker work. */}
+        {/* A quicker spin reads as quicker work. Decorative: the row's text and the page's live region say "Converting". */}
         {item.status === 'converting' && (
-          <LoaderCircle className="size-[18px] shrink-0 animate-[spin_0.7s_linear_infinite] text-ink-muted" aria-label="Converting" />
+          <LoaderCircle className="size-[18px] shrink-0 animate-[spin_0.7s_linear_infinite] text-ink-muted" aria-hidden />
         )}
         {item.status === 'done' && item.output && (
           <button

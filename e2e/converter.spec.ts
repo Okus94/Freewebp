@@ -1,9 +1,10 @@
 import { readFile } from 'node:fs/promises'
-import { expect, test, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { unzipSync } from 'fflate'
 import sharp from 'sharp'
 import { onWhite, psnr } from '../qa/metrics'
 import { FIXTURES, fixturePath } from './fixtures'
+import { expect, test } from './test'
 
 const rows = (page: Page) => page.getByRole('list', { name: 'Converted images' }).getByRole('listitem')
 const fileInput = (page: Page) => page.locator('input[type="file"]')
@@ -16,19 +17,6 @@ async function rgba(input: Buffer) {
 function isWebp(buf: Buffer) {
   return buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP'
 }
-
-let errors: string[]
-
-test.beforeEach(async ({ page }) => {
-  errors = []
-  page.on('pageerror', (error) => errors.push(error.message))
-  page.on('console', (msg) => msg.type() === 'error' && errors.push(msg.text()))
-  await page.goto('/')
-})
-
-test.afterEach(() => {
-  expect(errors, 'browser console errors').toEqual([])
-})
 
 test('page renders the hero and FAQ', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Convert images to WebP' })).toBeVisible()
