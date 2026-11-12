@@ -4,7 +4,6 @@ import {
   dimensionError,
   formatBytes,
   isSvg,
-  savingsPercent,
   toWebpName,
   uniqueName,
   validateFile,
@@ -76,13 +75,5 @@ describe('formatBytes', () => {
     expect(formatBytes(1536)).toBe('1.5 KB')
     expect(formatBytes(312 * 1024)).toBe('312 KB')
     expect(formatBytes(2.4 * 1024 * 1024)).toBe('2.4 MB')
-  })
-})
-
-describe('savingsPercent', () => {
-  it('reports savings and growth', () => {
-    expect(savingsPercent(1000, 260)).toBe(74)
-    expect(savingsPercent(1000, 1120)).toBe(-12)
-    expect(savingsPercent(0, 10)).toBe(0)
   })
 })

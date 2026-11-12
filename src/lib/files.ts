@@ -75,9 +75,3 @@ export function formatBytes(bytes: number): string {
   const mb = kb / 1024
   return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`
 }
-
-/** Percentage saved going from `before` to `after` bytes; negative when the file grew. */
-export function savingsPercent(before: number, after: number): number {
-  if (before <= 0) return 0
-  return Math.round(((before - after) / before) * 100)
-}
