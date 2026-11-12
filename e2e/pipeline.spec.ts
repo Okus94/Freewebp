@@ -3,6 +3,22 @@ import { fixturePath } from './fixtures'
 import { expect, test } from './test'
 
 const fileInput = (page: Page) => page.locator('input[type="file"]')
+const field = (page: Page) => page.getByRole('button', { name: /Drop images here/ })
+
+test('dragging over the field loads the encoder before any file is chosen', async ({ page }) => {
+  const wasm = page.waitForRequest((request) => request.url().endsWith('.wasm'), { timeout: 10_000 })
+  await field(page).dispatchEvent('dragover', { dataTransfer: await page.evaluateHandle(() => new DataTransfer()) })
+  await wasm
+  // Still no files, and the page didn't do anything visible about it.
+  await expect(page.getByRole('list', { name: 'Converted images' })).toHaveCount(0)
+})
+
+test('pressing the field loads the encoder too', async ({ page }) => {
+  const wasm = page.waitForRequest((request) => request.url().endsWith('.wasm'), { timeout: 10_000 })
+  const chooser = page.waitForEvent('filechooser')
+  await field(page).click()
+  await Promise.all([wasm, chooser])
+})
 
 test('every canvas used for decoding is emptied as soon as its pixels are read', async ({ page }) => {
   // Keep a handle on every canvas the page makes, including the ones it throws away.

@@ -36,6 +36,18 @@ function getWorker(): Worker {
   return worker
 }
 
+let warmed = false
+
+/**
+ * Starts the worker and its WebAssembly now, so the first conversion doesn't wait for them. Call it
+ * when someone reaches for the drop field; it does nothing after the first time.
+ */
+export function warmUp() {
+  if (warmed) return
+  warmed = true
+  getWorker().postMessage({ warm: true } satisfies EncodeRequest)
+}
+
 let nextId = 0
 
 /** Encodes decoded pixels to WebP in the worker. Takes ownership of `image.data`'s buffer. */
