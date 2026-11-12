@@ -69,6 +69,9 @@ export default async function globalSetup() {
   const byName = Object.fromEntries(FIXTURES.map((f) => [f.file, f]))
 
   await write('photo.jpg', await photoPixels(240, 160).jpeg({ quality: 90 }).toBuffer())
+  // The same photo stored sideways with EXIF orientation 6, the way phones save portrait shots: it
+  // must come out as 160×240, upright.
+  await write('rotated.jpg', await photoPixels(240, 160).jpeg({ quality: 90 }).withMetadata({ orientation: 6 }).toBuffer())
   await write('transparent.png', await photoPixels(240, 160, true).png().toBuffer())
   await write('animation.gif', await photoPixels(240, 160).gif().toBuffer())
   await write('photo.avif', await photoPixels(240, 160).avif({ quality: 70 }).toBuffer())

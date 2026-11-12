@@ -77,9 +77,11 @@ async function decodeToImageData(file: File): Promise<ImageData> {
   let canvas: HTMLCanvasElement | null = null
 
   try {
-    // createImageBitmap is fastest but can't read SVGs and, in some browsers, ICOs.
+    // createImageBitmap is fastest but can't read SVGs and, in some browsers, ICOs. Asking for the
+    // EXIF orientation explicitly keeps phone photos upright in older browsers that didn't apply it
+    // by default; one that rejects the option throws, and the <img> fallback below honours it anyway.
     if (isSvg(file)) throw new Error('svg')
-    source = await createImageBitmap(file)
+    source = await createImageBitmap(file, { imageOrientation: 'from-image' })
     width = source.width
     height = source.height
   } catch {

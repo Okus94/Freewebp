@@ -1,9 +1,31 @@
+import { readFile } from 'node:fs/promises'
 import type { Page } from '@playwright/test'
+import sharp from 'sharp'
+import { onWhite, psnr } from '../qa/metrics'
 import { fixturePath } from './fixtures'
 import { expect, test } from './test'
 
 const fileInput = (page: Page) => page.locator('input[type="file"]')
 const field = (page: Page) => page.getByRole('button', { name: /Drop images here/ })
+
+test('a photo saved sideways with an EXIF orientation comes out upright', async ({ page }) => {
+  await fileInput(page).setInputFiles(fixturePath('rotated.jpg'))
+  await expect(page.getByText('1 of 1 converted')).toBeVisible({ timeout: 15_000 })
+
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download', exact: true }).click()
+  const webp = await readFile(await (await download).path())
+  const decoded = await sharp(webp).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  expect([decoded.info.width, decoded.info.height], 'rotated to portrait').toEqual([160, 240])
+
+  // And the pixels match the source as a viewer would show it (sharp's rotate() applies the EXIF tag).
+  const upright = await sharp(await readFile(fixturePath('rotated.jpg'))).rotate().ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const score = psnr(
+    onWhite({ data: upright.data, width: upright.info.width, height: upright.info.height }),
+    onWhite({ data: decoded.data, width: decoded.info.width, height: decoded.info.height }),
+  )
+  expect(score, 'same picture, not just the same shape').toBeGreaterThan(30)
+})
 
 test('dragging over the field loads the encoder before any file is chosen', async ({ page }) => {
   const wasm = page.waitForRequest((request) => request.url().endsWith('.wasm'), { timeout: 10_000 })
