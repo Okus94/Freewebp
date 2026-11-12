@@ -40,6 +40,17 @@ test('page renders the hero and FAQ', async ({ page }) => {
   await expect(page.getByText(/Your images never leave your computer or phone/)).toBeVisible()
 })
 
+test('the hero heading fits the screen at every width', async ({ page }) => {
+  const heading = page.getByRole('heading', { name: 'Convert images to WebP' })
+  // 640–700px is where a fixed 66px heading used to poke past both edges and get clipped.
+  for (const width of [390, 640, 660, 700, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 })
+    const box = (await heading.boundingBox())!
+    expect(box.x, `${width}px viewport: left edge on screen`).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width, `${width}px viewport: right edge on screen`).toBeLessThanOrEqual(width)
+  }
+})
+
 test('converts every supported format to a valid WebP', async ({ page }, testInfo) => {
   await fileInput(page).setInputFiles(FIXTURES.map((f) => fixturePath(f.file)))
   await expect(rows(page)).toHaveCount(FIXTURES.length)
