@@ -9,6 +9,18 @@ export class ImageProblem extends Error {}
 let worker: Worker | null = null
 const pending = new Map<string, { resolve: (blob: Blob) => void; reject: (error: Error) => void }>()
 
+/**
+ * The worker itself broke (its script or WebAssembly failed to load, or it crashed), so no reply is
+ * ever coming: fail everything waiting on it and let the next conversion start a fresh one.
+ */
+function discardWorker(message: string) {
+  const jobs = [...pending.values()]
+  pending.clear()
+  worker?.terminate()
+  worker = null
+  for (const job of jobs) job.reject(new Error(message))
+}
+
 function getWorker(): Worker {
   if (worker) return worker
   worker = new Worker(new URL('../workers/encode.worker.ts', import.meta.url), { type: 'module' })
@@ -19,7 +31,20 @@ function getWorker(): Worker {
     if ('error' in event.data) job.reject(new Error(event.data.error))
     else job.resolve(new Blob([event.data.buffer], { type: 'image/webp' }))
   }
+  worker.onerror = (event) => discardWorker(event.message || 'The image encoder stopped working')
+  worker.onmessageerror = () => discardWorker('The image encoder sent back something unreadable')
   return worker
+}
+
+let nextId = 0
+
+/** Encodes decoded pixels to WebP in the worker. Takes ownership of `image.data`'s buffer. */
+export function encodeInWorker(image: ImageData, quality: number): Promise<Blob> {
+  const id = String(nextId++)
+  return new Promise<Blob>((resolve, reject) => {
+    pending.set(id, { resolve, reject })
+    getWorker().postMessage({ id, image, quality } satisfies EncodeRequest, [image.data.buffer])
+  })
 }
 
 function loadImageElement(url: string): Promise<HTMLImageElement> {
@@ -70,8 +95,6 @@ async function decodeToImageData(file: File): Promise<ImageData> {
   }
 }
 
-let nextId = 0
-
 /** Converts one image file to a WebP blob. Encoding runs in a worker so the page stays responsive. */
 export async function convertToWebp(file: File, quality = WEBP_QUALITY): Promise<Blob> {
   // Reject oversized images from their header, before decoding allocates memory for every pixel.
@@ -79,10 +102,5 @@ export async function convertToWebp(file: File, quality = WEBP_QUALITY): Promise
   const tooLarge = declared && dimensionError(declared.width, declared.height)
   if (tooLarge) throw new ImageProblem(tooLarge)
 
-  const image = await decodeToImageData(file)
-  const id = String(nextId++)
-  return new Promise<Blob>((resolve, reject) => {
-    pending.set(id, { resolve, reject })
-    getWorker().postMessage({ id, image, quality } satisfies EncodeRequest, [image.data.buffer])
-  })
+  return encodeInWorker(await decodeToImageData(file), quality)
 }
