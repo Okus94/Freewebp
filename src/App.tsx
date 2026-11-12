@@ -9,6 +9,7 @@ import { ShapeRain } from './components/ShapeRain'
 import { SiteFooter } from './components/SiteFooter'
 import { useConverter } from './hooks/useConverter'
 import { useShapesAfterDownload } from './hooks/useShapesAfterDownload'
+import { describeProgress } from './lib/announce'
 
 /** Staggers the first-load entrance; 80ms apart reads as one cascade, not a queue. */
 const delay = (ms: number) => ({ '--delay': `${ms}ms` }) as CSSProperties
@@ -54,11 +55,17 @@ export default function App() {
               </div>
               {/* Only while the page is empty; it steps aside once there are files to download. */}
               {items.length === 0 && <FormatStrip />}
-              {notice && (
-                <p className="mt-3 text-[13px] leading-[1.3] text-rose transition-[opacity,translate] duration-200 ease-fluid starting:opacity-0 motion-safe:starting:-translate-y-1">
-                  {notice}
-                </p>
-              )}
+              {/* Live regions are always in the page, so screen readers announce what appears in them. */}
+              <div role="status">
+                {notice && (
+                  <p className="mt-3 text-[13px] leading-[1.3] text-rose transition-[opacity,translate] duration-200 ease-fluid starting:opacity-0 motion-safe:starting:-translate-y-1">
+                    {notice}
+                  </p>
+                )}
+              </div>
+              <p role="status" className="sr-only">
+                {describeProgress(items)}
+              </p>
               {items.length > 0 && (
                 <ResultsList items={items} clearing={clearing} onRemove={remove} onClear={clear} onDownloaded={onDownloaded} />
               )}
