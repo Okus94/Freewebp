@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useEffect, type CSSProperties } from 'react'
 import { BackgroundGlow } from './components/BackgroundGlow'
 import { DropField } from './components/DropField'
 import { Faq } from './components/Faq'
@@ -16,6 +16,18 @@ const delay = (ms: number) => ({ '--delay': `${ms}ms` }) as CSSProperties
 export default function App() {
   const { items, notice, clearing, addFiles, remove, clear } = useConverter()
   const { showShapes, onDownloaded } = useShapesAfterDownload()
+
+  // A drop that misses the field would make the browser open the file in place of the page,
+  // losing every converted image. The field handles its own drops; everywhere else, do nothing.
+  useEffect(() => {
+    const prevent = (event: DragEvent) => event.preventDefault()
+    window.addEventListener('dragover', prevent)
+    window.addEventListener('drop', prevent)
+    return () => {
+      window.removeEventListener('dragover', prevent)
+      window.removeEventListener('drop', prevent)
+    }
+  }, [])
 
   return (
     // overflow-x-clip lets glows spill past the edges on small screens without making the page scroll sideways.

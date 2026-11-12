@@ -111,6 +111,29 @@ test('accepts files dropped onto the drop field', async ({ page }) => {
   await expect(page.getByText('1 of 1 converted')).toBeVisible({ timeout: 15_000 })
 })
 
+test('a drop that misses the field never replaces the page with the file', async ({ page }) => {
+  // Synthetic events can't trigger real navigation, but they do show whether the page cancels
+  // the browser's default (opening the dropped file) outside the drop field.
+  const prevented = await page.evaluate(() => {
+    return (['dragover', 'drop'] as const).map((type) => {
+      const event = new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: new DataTransfer() })
+      document.body.dispatchEvent(event)
+      return event.defaultPrevented
+    })
+  })
+  expect(prevented, 'dragover and drop are cancelled outside the field').toEqual([true, true])
+
+  // Dropping on the field itself still converts.
+  const bytes = [...(await readFile(fixturePath('photo.jpg')))]
+  const dataTransfer = await page.evaluateHandle((data) => {
+    const dt = new DataTransfer()
+    dt.items.add(new File([new Uint8Array(data)], 'still-works.jpg', { type: 'image/jpeg' }))
+    return dt
+  }, bytes)
+  await page.getByRole('button', { name: /Drop images here/ }).dispatchEvent('drop', { dataTransfer })
+  await expect(page.getByText('1 of 1 converted')).toBeVisible({ timeout: 15_000 })
+})
+
 test('rejects oversized and unsupported files without blocking the rest', async ({ page }) => {
   await fileInput(page).setInputFiles([fixturePath('too-big.jpg'), fixturePath('notes.pdf'), fixturePath('photo.jpg')])
   await expect(rows(page)).toHaveCount(3)
