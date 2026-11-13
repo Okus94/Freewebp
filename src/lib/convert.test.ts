@@ -19,6 +19,8 @@ const workers: FakeWorker[] = []
 const pixels = () => ({ data: new Uint8ClampedArray(4), width: 1, height: 1, colorSpace: 'srgb' }) as ImageData
 
 let encodeInWorker: typeof import('./convert').encodeInWorker
+let convertToWebp: typeof import('./convert').convertToWebp
+let ImageProblem: typeof import('./convert').ImageProblem
 
 beforeEach(async () => {
   workers.length = 0
@@ -33,7 +35,7 @@ beforeEach(async () => {
   )
   // A fresh module each time, so the worker singleton doesn't carry over between tests.
   vi.resetModules()
-  ;({ encodeInWorker } = await import('./convert'))
+  ;({ encodeInWorker, convertToWebp, ImageProblem } = await import('./convert'))
 })
 
 afterEach(() => vi.unstubAllGlobals())
@@ -87,5 +89,28 @@ describe('encodeInWorker', () => {
     workers[0].onmessageerror!({} as MessageEvent)
     await expect(job).rejects.toThrow('unreadable')
     expect(workers[0].terminated).toBe(true)
+  })
+})
+
+describe('convertToWebp', () => {
+  it('reports a file the browser cannot decode as a problem with the image, not a bug', async () => {
+    // Neither decoder can read it: createImageBitmap rejects, and the <img> fallback fires onerror.
+    vi.stubGlobal('createImageBitmap', () => Promise.reject(new Error('The source image could not be decoded')))
+    vi.stubGlobal(
+      'Image',
+      class {
+        onerror: (() => void) | null = null
+        set src(_: string) {
+          queueMicrotask(() => this.onerror?.())
+        }
+      },
+    )
+    vi.stubGlobal('URL', { ...URL, createObjectURL: () => 'blob:fake', revokeObjectURL: () => {} })
+
+    const broken = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3])], 'broken.jpg', { type: 'image/jpeg' })
+    const result = convertToWebp(broken)
+    await expect(result).rejects.toBeInstanceOf(ImageProblem)
+    await expect(result).rejects.toThrow('Couldn’t read this image')
+    expect(workers, 'nothing was sent to the encoder').toHaveLength(0)
   })
 })

@@ -51,7 +51,8 @@ function loadImageElement(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('Couldn’t read this image'))
+    // A corrupt or truncated file is the person's problem to hear about, not a bug to log.
+    img.onerror = () => reject(new ImageProblem('Couldn’t read this image'))
     img.src = url
   })
 }

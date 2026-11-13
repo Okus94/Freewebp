@@ -141,6 +141,13 @@ test('rejects oversized and unsupported files without blocking the rest', async 
   await expect(page.getByText('1 of 3 converted')).toBeVisible({ timeout: 15_000 })
 })
 
+test('explains when a file is corrupt, without treating it as a bug', async ({ page }) => {
+  // The console-error check in the shared fixture is what proves it wasn't logged as unexpected.
+  await fileInput(page).setInputFiles([fixturePath('broken.jpg'), fixturePath('photo.jpg')])
+  await expect(rows(page).nth(0)).toContainText('Couldn’t read this image', { timeout: 15_000 })
+  await expect(page.getByText('1 of 2 converted')).toBeVisible({ timeout: 15_000 })
+})
+
 test('explains when an image is too large to convert', async ({ page }) => {
   await fileInput(page).setInputFiles([fixturePath('too-wide.png'), fixturePath('too-many-pixels.png'), fixturePath('photo.jpg')])
   await expect(rows(page).nth(0)).toContainText('Too large: 17,000 × 200 px (max 16,383 px per side)', { timeout: 15_000 })
