@@ -97,6 +97,9 @@ export default async function globalSetup() {
   bomb.writeUInt32BE(60000, 20)
   await write('bomb.png', bomb)
   await write('too-many-pixels.png', await flat(8000, 7000))
+  // A JPEG cut off part-way through its headers (before the frame header that holds its size), the
+  // way a failed download or copy leaves a file: a valid start, nothing to decode.
+  await write('broken.jpg', (await photoPixels(240, 160).jpeg({ quality: 90 }).toBuffer()).subarray(0, 64))
   // Over the size limit; contents don't matter because size is checked first.
   await write('too-big.jpg', Buffer.alloc(11 * 1024 * 1024, 1))
   await write('notes.pdf', '%PDF-1.4 not an image')
