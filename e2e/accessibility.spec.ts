@@ -24,7 +24,7 @@ test('screen readers hear which files failed and why', async ({ page }) => {
 
 test('the batch-limit notice is a live region', async ({ page }) => {
   await fileInput(page).setInputFiles(Array.from({ length: 21 }, () => fixturePath('photo.jpg')))
-  await expect(page.getByRole('status').filter({ hasText: /weren’t added/ })).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: /wasn’t added/ })).toBeVisible()
 })
 
 /** The accessible name of whatever has keyboard focus. */

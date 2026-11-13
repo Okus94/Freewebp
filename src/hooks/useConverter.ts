@@ -33,10 +33,9 @@ export function useConverter() {
   const addFiles = useCallback((files: File[]) => {
     const room = MAX_FILES - itemsRef.current.length
     const accepted = files.slice(0, Math.max(room, 0))
+    const left = files.length - accepted.length
     setNotice(
-      files.length > accepted.length
-        ? `You can convert up to ${MAX_FILES} images at a time — ${files.length - accepted.length} weren’t added.`
-        : null,
+      left > 0 ? `You can convert up to ${MAX_FILES} images at a time — ${left} ${left === 1 ? 'wasn’t' : 'weren’t'} added.` : null,
     )
     if (accepted.length === 0) return
     const added = accepted.map<ConvertItem>((file, batchIndex) => {

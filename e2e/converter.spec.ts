@@ -214,7 +214,12 @@ test('nothing leaves the browser: no uploads, no outside requests', async ({ pag
 test('limits a batch to 20 images', async ({ page }) => {
   await fileInput(page).setInputFiles(Array.from({ length: 21 }, () => fixturePath('photo.jpg')))
   await expect(rows(page)).toHaveCount(20)
-  await expect(page.getByText(/up to 20 images at a time — 1 weren’t added/)).toBeVisible()
+  await expect(page.getByText(/up to 20 images at a time — 1 wasn’t added/)).toBeVisible()
+})
+
+test('says how many images were left out of an oversized batch', async ({ page }) => {
+  await fileInput(page).setInputFiles(Array.from({ length: 25 }, () => fixturePath('photo.jpg')))
+  await expect(page.getByText(/up to 20 images at a time — 5 weren’t added/)).toBeVisible()
 })
 
 test('converts a 12-megapixel photo and keeps the page responsive', async ({ page }, testInfo) => {
