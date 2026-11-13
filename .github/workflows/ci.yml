@@ -1,0 +1,51 @@
+# Runs on every pull request to main and every push to main: type-check, unit tests, then the
+# browser tests against the production build. The QA benchmark (npm run qa) is left out: it
+# downloads the Kodak corpus on every fresh runner.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type-check
+        run: npx tsc -b
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Browser tests (production build, Chromium + WebKit)
+        run: npm run test:e2e
+
+      - name: Keep fixtures, screenshots and the report when something fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-output
+          path: |
+            .qa/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
