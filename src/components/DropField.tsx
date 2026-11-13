@@ -1,10 +1,10 @@
-import { useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+import { useRef, useState, type DragEvent, type KeyboardEvent, type Ref } from 'react'
 import { Plus } from 'lucide-react'
 import { useBorderLight } from '../hooks/useBorderLight'
 import { ChromeOrb } from './ChromeOrb'
 import { ACCEPT_ATTRIBUTE } from '../lib/files'
 
-export function DropField({ onFiles }: { onFiles: (files: File[]) => void }) {
+export function DropField({ onFiles, ref }: { onFiles: (files: File[]) => void; ref?: Ref<HTMLDivElement> }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const ringRef = useRef<HTMLSpanElement>(null)
   const bulbRef = useRef<HTMLSpanElement>(null)
@@ -31,6 +31,7 @@ export function DropField({ onFiles }: { onFiles: (files: File[]) => void }) {
 
   return (
     <div
+      ref={ref}
       role="button"
       tabIndex={0}
       aria-label="Drop images here, or press Enter to choose images"

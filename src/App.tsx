@@ -1,4 +1,4 @@
-import { useEffect, type CSSProperties } from 'react'
+import { useEffect, useRef, type CSSProperties } from 'react'
 import { BackgroundGlow } from './components/BackgroundGlow'
 import { DropField } from './components/DropField'
 import { Faq } from './components/Faq'
@@ -17,6 +17,8 @@ const delay = (ms: number) => ({ '--delay': `${ms}ms` }) as CSSProperties
 export default function App() {
   const { items, notice, clearing, addFiles, remove, clear } = useConverter()
   const { showShapes, onDownloaded } = useShapesAfterDownload()
+  /** The drop field, where focus returns when the list empties. */
+  const fieldRef = useRef<HTMLDivElement>(null)
 
   // A drop that misses the field would make the browser open the file in place of the page,
   // losing every converted image. The field handles its own drops; everywhere else, do nothing.
@@ -51,7 +53,7 @@ export default function App() {
                 Smaller files, same quality. No uploads, no sign-up
               </p>
               <div className="motion-rise w-full" style={delay(160)}>
-                <DropField onFiles={addFiles} />
+                <DropField ref={fieldRef} onFiles={addFiles} />
               </div>
               {/* Only while the page is empty; it steps aside once there are files to download. */}
               {items.length === 0 && <FormatStrip />}
@@ -67,7 +69,14 @@ export default function App() {
                 {describeProgress(items)}
               </p>
               {items.length > 0 && (
-                <ResultsList items={items} clearing={clearing} onRemove={remove} onClear={clear} onDownloaded={onDownloaded} />
+                <ResultsList
+                  items={items}
+                  clearing={clearing}
+                  fieldRef={fieldRef}
+                  onRemove={remove}
+                  onClear={clear}
+                  onDownloaded={onDownloaded}
+                />
               )}
             </div>
           </div>
