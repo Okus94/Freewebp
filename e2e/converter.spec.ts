@@ -156,21 +156,36 @@ test('explains when an image is too large to convert', async ({ page }) => {
 })
 
 test('refuses oversized images from their header, before decoding anything', async ({ page }) => {
-  // Count decode calls: an oversized image must be rejected without one.
+  // Count decode calls and thumbnail URLs: an oversized image must be rejected without either, since
+  // even the row's small <img> would make the browser decode every pixel.
   await page.addInitScript(() => {
-    const w = window as unknown as { decodes: number }
+    const w = window as unknown as { decodes: number; thumbnails: number }
     w.decodes = 0
+    w.thumbnails = 0
     const original = window.createImageBitmap.bind(window)
     window.createImageBitmap = ((...args: Parameters<typeof createImageBitmap>) => {
       w.decodes++
       return original(...args)
     }) as typeof createImageBitmap
+    const createObjectURL = URL.createObjectURL.bind(URL)
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      w.thumbnails++
+      return createObjectURL(object)
+    }
   })
   await page.reload()
-  await fileInput(page).setInputFiles([fixturePath('bomb.png'), fixturePath('too-wide.png')])
+  await fileInput(page).setInputFiles([fixturePath('bomb.png'), fixturePath('too-wide.png'), fixturePath('photo.jpg')])
   await expect(rows(page).nth(0)).toContainText('Too large: 60,000 × 60,000 px (max 16,383 px per side)', { timeout: 15_000 })
   await expect(rows(page).nth(1)).toContainText('Too large: 17,000 × 200 px', { timeout: 15_000 })
-  expect(await page.evaluate(() => (window as unknown as { decodes: number }).decodes)).toBe(0)
+  await expect(page.getByText('1 of 3 converted')).toBeVisible({ timeout: 15_000 })
+  await expect(rows(page).nth(0).locator('img'), 'no thumbnail for the bomb').toHaveCount(0)
+  await expect(rows(page).nth(1).locator('img'), 'no thumbnail for the oversized image').toHaveCount(0)
+  await expect(rows(page).nth(2).locator('img'), 'a normal image keeps its thumbnail').toHaveCount(1)
+  const counts = await page.evaluate(() => {
+    const w = window as unknown as { decodes: number; thumbnails: number }
+    return { decodes: w.decodes, thumbnails: w.thumbnails }
+  })
+  expect(counts, 'one decode and one thumbnail URL, both for the normal image').toEqual({ decodes: 1, thumbnails: 1 })
 })
 
 test('sends security headers', async ({ page }) => {
