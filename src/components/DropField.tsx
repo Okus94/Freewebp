@@ -1,10 +1,11 @@
-import { useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+import { useRef, useState, type DragEvent, type KeyboardEvent, type Ref } from 'react'
 import { Plus } from 'lucide-react'
 import { useBorderLight } from '../hooks/useBorderLight'
 import { ChromeOrb } from './ChromeOrb'
+import { warmUp } from '../lib/convert'
 import { ACCEPT_ATTRIBUTE } from '../lib/files'
 
-export function DropField({ onFiles }: { onFiles: (files: File[]) => void }) {
+export function DropField({ onFiles, ref }: { onFiles: (files: File[]) => void; ref?: Ref<HTMLDivElement> }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const ringRef = useRef<HTMLSpanElement>(null)
   const bulbRef = useRef<HTMLSpanElement>(null)
@@ -13,7 +14,11 @@ export function DropField({ onFiles }: { onFiles: (files: File[]) => void }) {
   // The light travels round the border; dragging files over it speeds it up 3×, smoothly.
   useBorderLight(ringRef, bulbRef, dragging ? 3 : 1)
 
-  const openPicker = () => inputRef.current?.click()
+  // Reaching for the field is the earliest sign images are coming: get the encoder ready meanwhile.
+  const openPicker = () => {
+    warmUp()
+    inputRef.current?.click()
+  }
 
   const onDrop = (event: DragEvent) => {
     event.preventDefault()
@@ -31,6 +36,7 @@ export function DropField({ onFiles }: { onFiles: (files: File[]) => void }) {
 
   return (
     <div
+      ref={ref}
       role="button"
       tabIndex={0}
       aria-label="Drop images here, or press Enter to choose images"
@@ -38,6 +44,7 @@ export function DropField({ onFiles }: { onFiles: (files: File[]) => void }) {
       onKeyDown={onKeyDown}
       onDragOver={(event) => {
         event.preventDefault()
+        warmUp()
         setDragging(true)
       }}
       onDragLeave={(event) => {

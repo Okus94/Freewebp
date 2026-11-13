@@ -27,6 +27,8 @@ export function useConverter() {
   const [clearing, setClearing] = useState(false)
   const itemsRef = useRef(items)
   itemsRef.current = items
+  /** The item being converted right now, kept outside `items` so removing it doesn't start the next one early. */
+  const inFlight = useRef<string | null>(null)
 
   const addFiles = useCallback((files: File[]) => {
     const room = MAX_FILES - itemsRef.current.length
@@ -53,16 +55,23 @@ export function useConverter() {
   }, [])
 
   // Convert one image at a time, so large batches don't hold every decoded image in memory at once.
+  // That holds even when the converting item is removed: its work can't be cancelled, so the next
+  // one waits for it to settle rather than running alongside it.
   useEffect(() => {
-    if (items.some((item) => item.status === 'converting')) return
+    if (inFlight.current) return
     const next = items.find((item) => item.status === 'queued')
     if (!next) return
+    inFlight.current = next.id
     setItems((current) => current.map((item) => (item.id === next.id ? { ...item, status: 'converting' } : item)))
+    // Clear the slot before updating state, so the update's render sees it free and starts the next item
+    // (always a new array, so the effect re-runs even if this item has since been removed).
     convertToWebp(next.file).then(
       (output) => {
+        inFlight.current = null
         setItems((current) => current.map((item) => (item.id === next.id ? { ...item, status: 'done', output } : item)))
       },
       (error: unknown) => {
+        inFlight.current = null
         const expected = error instanceof ImageProblem
         if (!expected) console.error(`Failed to convert ${next.file.name}`, error)
         const message = expected ? error.message : 'Couldn’t convert this image'

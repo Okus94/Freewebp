@@ -27,6 +27,43 @@ test('the batch-limit notice is a live region', async ({ page }) => {
   await expect(page.getByRole('status').filter({ hasText: /weren’t added/ })).toBeVisible()
 })
 
+/** The accessible name of whatever has keyboard focus. */
+const focused = (page: Page) => page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? null)
+
+test('removing a row with the keyboard moves focus to the next row, then the last one, then the field', async ({ page }) => {
+  await fileInput(page).setInputFiles([fixturePath('photo.jpg'), fixturePath('transparent.png'), fixturePath('animation.gif')])
+  await expect(page.getByText('3 of 3 converted')).toBeVisible({ timeout: 15_000 })
+
+  await rows(page).nth(0).getByRole('button', { name: /^Remove/ }).focus()
+  await page.keyboard.press('Enter')
+  expect(await focused(page), 'the next row takes over').toBe('Remove transparent.png')
+
+  // Now on the middle row; removing it must not wait for the first row's exit animation to finish.
+  await page.keyboard.press('Enter')
+  expect(await focused(page), 'the only row left').toBe('Remove animation.gif')
+
+  await page.keyboard.press('Enter')
+  expect(await focused(page), 'list empty: back to the drop field').toMatch(/^Drop images here/)
+  await expect(page.getByRole('list', { name: 'Converted images' })).toHaveCount(0)
+})
+
+test('removing the last row moves focus to the row before it', async ({ page }) => {
+  await fileInput(page).setInputFiles([fixturePath('photo.jpg'), fixturePath('transparent.png')])
+  await expect(page.getByText('2 of 2 converted')).toBeVisible({ timeout: 15_000 })
+  await rows(page).nth(1).getByRole('button', { name: /^Remove/ }).focus()
+  await page.keyboard.press('Enter')
+  expect(await focused(page)).toBe('Remove photo.jpg')
+})
+
+test('clearing the list moves focus to the drop field', async ({ page }) => {
+  await fileInput(page).setInputFiles([fixturePath('photo.jpg'), fixturePath('transparent.png')])
+  await expect(page.getByText('2 of 2 converted')).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: 'Clear' }).focus()
+  await page.keyboard.press('Enter')
+  expect(await focused(page)).toMatch(/^Drop images here/)
+  await expect(page.getByRole('list', { name: 'Converted images' })).toHaveCount(0)
+})
+
 test('the spinner is decorative; the text carries the status', async ({ page }) => {
   await fileInput(page).setInputFiles(fixturePath('large.jpg'))
   const row = rows(page).first()

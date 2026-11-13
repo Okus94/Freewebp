@@ -36,6 +36,18 @@ function getWorker(): Worker {
   return worker
 }
 
+let warmed = false
+
+/**
+ * Starts the worker and its WebAssembly now, so the first conversion doesn't wait for them. Call it
+ * when someone reaches for the drop field; it does nothing after the first time.
+ */
+export function warmUp() {
+  if (warmed) return
+  warmed = true
+  getWorker().postMessage({ warm: true } satisfies EncodeRequest)
+}
+
 let nextId = 0
 
 /** Encodes decoded pixels to WebP in the worker. Takes ownership of `image.data`'s buffer. */
@@ -63,11 +75,14 @@ async function decodeToImageData(file: File): Promise<ImageData> {
   let width: number
   let height: number
   let url: string | null = null
+  let canvas: HTMLCanvasElement | null = null
 
   try {
-    // createImageBitmap is fastest but can't read SVGs and, in some browsers, ICOs.
+    // createImageBitmap is fastest but can't read SVGs and, in some browsers, ICOs. Asking for the
+    // EXIF orientation explicitly keeps phone photos upright in older browsers that didn't apply it
+    // by default; one that rejects the option throws, and the <img> fallback below honours it anyway.
     if (isSvg(file)) throw new Error('svg')
-    source = await createImageBitmap(file)
+    source = await createImageBitmap(file, { imageOrientation: 'from-image' })
     width = source.width
     height = source.height
   } catch {
@@ -83,7 +98,7 @@ async function decodeToImageData(file: File): Promise<ImageData> {
     // allocates memory for every pixel.
     const tooLarge = dimensionError(width, height)
     if (tooLarge) throw new ImageProblem(tooLarge)
-    const canvas = document.createElement('canvas')
+    canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
     const ctx = canvas.getContext('2d', { willReadFrequently: true })
@@ -93,6 +108,10 @@ async function decodeToImageData(file: File): Promise<ImageData> {
   } finally {
     if (source instanceof ImageBitmap) source.close()
     if (url) URL.revokeObjectURL(url)
+    // Free the canvas's pixel memory now rather than whenever garbage collection gets to it: Safari
+    // is slow to reclaim canvases, and iOS caps their total memory, so a batch of big photos could
+    // otherwise reach a point where drawImage silently paints nothing.
+    if (canvas) canvas.width = canvas.height = 0
   }
 }
 

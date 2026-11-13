@@ -5,9 +5,9 @@ class FakeWorker {
   onmessage: ((event: MessageEvent) => void) | null = null
   onerror: ((event: ErrorEvent) => void) | null = null
   onmessageerror: ((event: MessageEvent) => void) | null = null
-  posted: { id: string }[] = []
+  posted: { id?: string; warm?: true }[] = []
   terminated = false
-  postMessage(message: { id: string }) {
+  postMessage(message: { id?: string; warm?: true }) {
     this.posted.push(message)
   }
   terminate() {
@@ -19,6 +19,7 @@ const workers: FakeWorker[] = []
 const pixels = () => ({ data: new Uint8ClampedArray(4), width: 1, height: 1, colorSpace: 'srgb' }) as ImageData
 
 let encodeInWorker: typeof import('./convert').encodeInWorker
+let warmUp: typeof import('./convert').warmUp
 let convertToWebp: typeof import('./convert').convertToWebp
 let ImageProblem: typeof import('./convert').ImageProblem
 
@@ -35,10 +36,28 @@ beforeEach(async () => {
   )
   // A fresh module each time, so the worker singleton doesn't carry over between tests.
   vi.resetModules()
-  ;({ encodeInWorker, convertToWebp, ImageProblem } = await import('./convert'))
+  ;({ encodeInWorker, warmUp, convertToWebp, ImageProblem } = await import('./convert'))
 })
 
 afterEach(() => vi.unstubAllGlobals())
+
+describe('warmUp', () => {
+  it('starts the worker and asks it to load the encoder, once', () => {
+    warmUp()
+    warmUp()
+    expect(workers).toHaveLength(1)
+    expect(workers[0].posted).toEqual([{ warm: true }])
+  })
+
+  it('shares the warmed worker with the first real job', () => {
+    warmUp()
+    const job = encodeInWorker(pixels(), 80)
+    expect(workers).toHaveLength(1)
+    expect(workers[0].posted).toHaveLength(2)
+    workers[0].onmessage!({ data: { id: workers[0].posted[1].id, buffer: new ArrayBuffer(1) } } as MessageEvent)
+    return expect(job).resolves.toBeInstanceOf(Blob)
+  })
+})
 
 describe('encodeInWorker', () => {
   it('resolves each job with the bytes the worker sends back for it', async () => {
