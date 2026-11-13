@@ -1,6 +1,7 @@
 import { useRef, useState, type DragEvent, type KeyboardEvent, type Ref } from 'react'
 import { Plus } from 'lucide-react'
 import { useBorderLight } from '../hooks/useBorderLight'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { ChromeOrb } from './ChromeOrb'
 import { warmUp } from '../lib/convert'
 import { ACCEPT_ATTRIBUTE } from '../lib/files'
@@ -10,6 +11,9 @@ export function DropField({ onFiles, ref }: { onFiles: (files: File[]) => void; 
   const ringRef = useRef<HTMLSpanElement>(null)
   const bulbRef = useRef<HTMLSpanElement>(null)
   const [dragging, setDragging] = useState(false)
+  // Phones and tablets can't drag files in or press Enter, so the name screen readers hear says
+  // "tap" there, matching the visible label (which switches with the same media query, in CSS).
+  const touch = useMediaQuery('(pointer: coarse)')
 
   // The light travels round the border; dragging files over it speeds it up 3×, smoothly.
   useBorderLight(ringRef, bulbRef, dragging ? 3 : 1)
@@ -39,7 +43,7 @@ export function DropField({ onFiles, ref }: { onFiles: (files: File[]) => void; 
       ref={ref}
       role="button"
       tabIndex={0}
-      aria-label="Drop images here, or press Enter to choose images"
+      aria-label={touch ? 'Tap to choose images' : 'Drop images here, or press Enter to choose images'}
       onClick={openPicker}
       onKeyDown={onKeyDown}
       onDragOver={(event) => {
