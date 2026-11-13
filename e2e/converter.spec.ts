@@ -196,6 +196,7 @@ test('sends security headers', async ({ page }) => {
   expect(headers['x-content-type-options']).toBe('nosniff')
   expect(headers['x-frame-options']).toBe('DENY')
   expect(headers['referrer-policy']).toBe('no-referrer')
+  expect(headers['strict-transport-security']).toBe('max-age=31536000; includeSubDomains')
 })
 
 test('nothing leaves the browser: no uploads, no outside requests', async ({ page, baseURL }) => {
