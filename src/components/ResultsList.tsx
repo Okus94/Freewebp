@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState, type RefObject } from 'react'
 import { AlertCircle, Download, LoaderCircle, X } from 'lucide-react'
 import type { ConvertItem } from '../hooks/useConverter'
 import { downloadBlob, zipFiles } from '../lib/download'
@@ -11,10 +11,13 @@ const POP_IN = 'transition-[opacity,scale] duration-200 ease-fluid starting:opac
 
 function ResultRow({
   item,
+  removeRef,
   onRemove,
   onDownloaded,
 }: {
   item: ConvertItem
+  /** Lets the list find this row's Remove button, to hand focus to it when another row goes. */
+  removeRef: (button: HTMLButtonElement | null) => void
   onRemove: (id: string) => void
   onDownloaded: () => void
 }) {
@@ -75,6 +78,7 @@ function ResultRow({
           </button>
         )}
         <button
+          ref={removeRef}
           type="button"
           onClick={() => onRemove(item.id)}
           className={`flex size-8 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-field hover:text-ink ${PRESS}`}
@@ -91,18 +95,38 @@ function ResultRow({
 export function ResultsList({
   items,
   clearing,
+  fieldRef,
   onRemove,
   onClear,
   onDownloaded,
 }: {
   items: ConvertItem[]
   clearing: boolean
+  /** The drop field: where focus goes when the list empties, so it doesn't fall back to the top of the page. */
+  fieldRef: RefObject<HTMLElement | null>
   onRemove: (id: string) => void
   onClear: () => void
   /** Called after every download (single file or ZIP). */
   onDownloaded: () => void
 }) {
   const [zipping, setZipping] = useState(false)
+  const removeButtons = useRef(new Map<string, HTMLButtonElement>())
+
+  // A row's Remove button disappears with the row, so a keyboard or screen-reader user would be
+  // dropped back at <body>. Move focus first, while everything is still in the page: to the next
+  // row's Remove button, the previous one's if this was last, or the drop field if the list empties.
+  const remove = (id: string) => {
+    const staying = items.filter((item) => !item.leaving)
+    const at = staying.findIndex((item) => item.id === id)
+    const neighbour = staying[at + 1] ?? staying[at - 1]
+    ;(neighbour ? removeButtons.current.get(neighbour.id) : fieldRef.current)?.focus()
+    onRemove(id)
+  }
+
+  const clear = () => {
+    fieldRef.current?.focus()
+    onClear()
+  }
   const done = items.filter((item): item is ConvertItem & { output: Blob } => item.status === 'done' && !!item.output)
   const busy = items.some((item) => item.status === 'queued' || item.status === 'converting')
   const before = done.reduce((sum, item) => sum + item.file.size, 0)
@@ -133,7 +157,13 @@ export function ResultsList({
     >
       <ul aria-label="Converted images" className="divide-y divide-hairline">
         {items.map((item) => (
-          <ResultRow key={item.id} item={item} onRemove={onRemove} onDownloaded={onDownloaded} />
+          <ResultRow
+            key={item.id}
+            item={item}
+            removeRef={(button) => (button ? removeButtons.current.set(item.id, button) : removeButtons.current.delete(item.id))}
+            onRemove={remove}
+            onDownloaded={onDownloaded}
+          />
         ))}
       </ul>
       <div className="glass-footer flex flex-wrap items-center justify-between gap-3 border-t border-hairline px-4 py-3">
@@ -147,7 +177,7 @@ export function ResultsList({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={onClear}
+            onClick={clear}
             className={`rounded-full px-3.5 py-2 text-[14px] leading-[1.3] font-medium text-ink hover:bg-field ${PRESS}`}
           >
             Clear
