@@ -6,6 +6,10 @@ export default defineConfig({
   testDir: 'e2e',
   globalSetup: './e2e/global-setup.ts',
   timeout: 60_000,
+  // GitHub's runners are slower than a Mac and have no GPU: run fewer tests at once so each gets
+  // enough CPU for its animations and WebGL, and give a timing-sensitive test one second chance.
+  workers: process.env.CI ? 2 : undefined,
+  retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { outputFolder: '.qa/e2e-report', open: 'never' }]],
   use: {
     baseURL: `http://localhost:${PORT}`,
