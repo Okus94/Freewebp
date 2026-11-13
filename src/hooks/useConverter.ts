@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ImageProblem, convertToWebp } from '../lib/convert'
-import { MAX_FILES, toWebpName, validateFile } from '../lib/files'
+import { MAX_FILES, dimensionError, toWebpName, validateFile } from '../lib/files'
+import { readImageSize } from '../lib/imageSize'
 
 export type ConvertItem = {
   id: string
@@ -18,6 +19,12 @@ export type ConvertItem = {
 
 let nextId = 0
 
+/** The dimension problem an image's header declares, if any. Formats without a readable header pass. */
+async function declaredSizeError(file: File): Promise<string | null> {
+  const size = await readImageSize(file).catch(() => null)
+  return size ? dimensionError(size.width, size.height) : null
+}
+
 /** How long exit animations run before items are actually removed. Exits are quicker than entrances. */
 const EXIT_MS = 180
 
@@ -30,17 +37,22 @@ export function useConverter() {
   /** The item being converted right now, kept outside `items` so removing it doesn't start the next one early. */
   const inFlight = useRef<string | null>(null)
 
-  const addFiles = useCallback((files: File[]) => {
+  const addFiles = useCallback(async (files: File[]) => {
+    // Check each file's declared size (from its header, never its pixels) before anything else, so an
+    // image too large to convert never gets a thumbnail: the browser would decode every pixel for
+    // that <img>, which is exactly what the header check exists to avoid. Only as many files as
+    // could possibly fit are read.
+    const checked = await Promise.all(
+      files.slice(0, MAX_FILES).map(async (file) => ({ file, error: validateFile(file) ?? (await declaredSizeError(file)) })),
+    )
     const room = MAX_FILES - itemsRef.current.length
-    const accepted = files.slice(0, Math.max(room, 0))
+    const accepted = checked.slice(0, Math.max(room, 0))
+    const left = files.length - accepted.length
     setNotice(
-      files.length > accepted.length
-        ? `You can convert up to ${MAX_FILES} images at a time — ${files.length - accepted.length} weren’t added.`
-        : null,
+      left > 0 ? `You can convert up to ${MAX_FILES} images at a time — ${left} ${left === 1 ? 'wasn’t' : 'weren’t'} added.` : null,
     )
     if (accepted.length === 0) return
-    const added = accepted.map<ConvertItem>((file, batchIndex) => {
-      const error = validateFile(file)
+    const added = accepted.map<ConvertItem>(({ file, error }, batchIndex) => {
       return {
         id: String(nextId++),
         file,
