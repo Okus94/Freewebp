@@ -25,15 +25,27 @@ Running a single e2e test: `npx playwright test -g "test name"`. First-time setu
 
 `dist/` is the deployable static site (works on any static host; this project deploys to Netlify — see `netlify.toml`).
 
+## Workflow rules
+
+How work is done in this repository. These are Orest's rules; follow them exactly.
+
+- Pull the latest `main` before starting anything.
+- Never commit to `main`. One branch per issue, or per group of issues that touch the same files.
+- Every pull request says `Closes #<issue>` for each issue it resolves. When a pull request covers several issues, make one commit per issue.
+- After creating issues, run the `issue-reviewer` agent on them. Proceed on the ones it approves. Stop and ask Orest about any it wants edited or closed, or flags as a design decision he hasn't already answered.
+- Pull requests that are open at the same time must not touch the same files.
+- Run the tests (`npm test`, `npm run test:e2e`, and `npm run qa` when the pipeline is touched) before opening every pull request, and say the results in the description.
+- Never merge. Orest merges.
+
 ## Architecture
 
 ### Conversion pipeline
 
 The core flow spans four files and is worth understanding as a whole before touching any one of them:
 
-1. `src/hooks/useConverter.ts` — the queue. Holds all `ConvertItem`s, validates new files (`src/lib/files.ts`: max 10 MB each, 20 files at a time, accepted type/extension list), and converts **one item at a time** (deliberate — avoids holding every decoded image in memory for large batches). Drives item lifecycle: `queued -> converting -> done | error`, plus exit-animation timing (`leaving` flag, `EXIT_MS`) before an item is actually removed from state.
-2. `src/lib/convert.ts` — `convertToWebp(file)`. First reads declared dimensions from the file header via `src/lib/imageSize.ts` (cheap rejection of decompression-bomb-style files before allocating pixel memory), then decodes to `ImageData` (`createImageBitmap`, falling back to an `<img>` element for SVG and browsers that can't `createImageBitmap` an ICO), then hands the pixels to the worker. Throws `ImageProblem` for user-facing errors (bad dimensions, unreadable file) vs. unexpected errors (logged with `console.error`, shown as a generic message).
-3. `src/workers/encode.worker.ts` — runs in a Web Worker; calls `@jsquash/webp/encode` at `WEBP_QUALITY` (`src/lib/settings.ts`, currently 80) and posts the encoded buffer back, transferring ownership both ways (no copies of pixel/encoded buffers across the worker boundary).
+1. `src/hooks/useConverter.ts` — the queue. Holds all `ConvertItem`s, validates new files (`src/lib/files.ts`: max 10 MB each, 20 files at a time, accepted type/extension list), and converts **one item at a time** (deliberate — avoids holding every decoded image in memory for large batches). The item being converted is tracked in an `inFlight` ref rather than derived from `items`, so removing it from the list doesn't start the next one alongside it: a conversion can't be cancelled, so the next waits for it to settle. Drives item lifecycle: `queued -> converting -> done | error`, plus exit-animation timing (`leaving` flag, `EXIT_MS`) before an item is actually removed from state.
+2. `src/lib/convert.ts` — `convertToWebp(file)`. First reads declared dimensions from the file header via `src/lib/imageSize.ts` (cheap rejection of decompression-bomb-style files before allocating pixel memory), then decodes to `ImageData` (`createImageBitmap(file, { imageOrientation: 'from-image' })` so phone photos come out upright in every browser, falling back to an `<img>` element for SVG and browsers that can't `createImageBitmap` an ICO), then hands the pixels to the worker. The decoding canvas is emptied (`width = height = 0`) as soon as its pixels are read, rather than left for garbage collection: Safari reclaims canvases slowly and iOS caps their total memory. Throws `ImageProblem` for user-facing errors (bad dimensions, unreadable file) vs. unexpected errors (logged with `console.error`, shown as a generic message). Also exports `warmUp()`, which starts the worker and its WebAssembly early; `DropField` calls it on `dragover` and on the first press of the field, so the first conversion doesn't wait for the ~350 KB encoder to load (measured: 2.3 s → 45 ms on slow 4G).
+3. `src/workers/encode.worker.ts` — runs in a Web Worker; loads the codec once (a `{ warm: true }` message just triggers that load; a failed load is forgotten so the next job retries), calls `@jsquash/webp/encode` at `WEBP_QUALITY` (`src/lib/settings.ts`, currently 80) and posts the encoded buffer back, transferring ownership both ways (no copies of pixel/encoded buffers across the worker boundary).
 4. `src/lib/download.ts` — single-file downloads, and `zipFiles()` (via `fflate`, stored uncompressed since WebP is already compressed) for "Download all".
 
 `src/lib/settings.ts` is intentionally import-free so both the app and the Node-based QA benchmark (`qa/benchmark.ts`) can share `WEBP_QUALITY` without pulling browser code into Node.
