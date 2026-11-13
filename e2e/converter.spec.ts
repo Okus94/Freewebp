@@ -520,6 +520,9 @@ test('the upload button is chrome, painted with WebGL, and still opens the file 
   await expect(surface).toHaveAttribute('data-renderer', 'webgl')
   // The still fallback gradient steps aside once WebGL paints.
   await expect(orb).toHaveCSS('background-image', 'none')
+  // Measure after the field's entrance animation: on GitHub's GPU-less runners WebKit is slow enough
+  // that it's still rising here, and two boxes read a frame apart differ by a fraction of a pixel.
+  await page.evaluate(() => document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).forEach((a) => a.finish()))
   const [orbBox, surfaceBox] = await Promise.all([orb.boundingBox(), surface.boundingBox()])
   expect(surfaceBox, 'the chrome fills the button').toEqual(orbBox)
   await expect(surface).toHaveCSS('pointer-events', 'none')
