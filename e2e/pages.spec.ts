@@ -29,3 +29,10 @@ test('with JavaScript on, the fallback stays out of the way', async ({ page }) =
   await expect(page.locator('noscript p')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Convert images to WebP' })).toBeVisible()
 })
+
+test('the 404 page links the web manifest like every other page', async ({ page }) => {
+  for (const path of ['/', '/privacy/', '/404.html']) {
+    const html = await (await page.request.get(path)).text()
+    expect(html, path).toContain('<link rel="manifest" href="/site.webmanifest"')
+  }
+})
