@@ -38,6 +38,11 @@ jobs:
 
       - name: Browser tests (production build, Chromium + WebKit)
         run: npm run test:e2e
+        env:
+          # The runners have no GPU. Point Mesa at its software renderer (llvmpipe) explicitly so
+          # WebKit's WebGL and compositing don't fall back to something slower or absent.
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          GALLIUM_DRIVER: llvmpipe
 
       - name: Keep fixtures, screenshots and the report when something fails
         if: failure()
